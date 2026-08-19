@@ -1,5 +1,27 @@
 export type AnalysisMode = "full" | "security" | "signatures";
 export type RiskLevel = "low" | "elevated" | "high" | "critical";
+export type QualityTier = "fast" | "precise" | "research";
+
+export const QUALITY_TIER_DETAILS: Record<QualityTier, { label: string; status: string; summary: string; capabilities: string[] }> = {
+  fast: {
+    label: "Fast",
+    status: "Available locally",
+    summary: "Quick triage using selector recovery and lightweight bytecode indicators.",
+    capabilities: ["Linear bytecode inspection", "Known selector recovery", "Basic security indicators", "Concise local report"],
+  },
+  precise: {
+    label: "Precise",
+    status: "Roadmap profile",
+    summary: "Higher-confidence reconstruction through global control-flow and recovered function context.",
+    capabilities: ["Context-sensitive CFG and jump resolution", "Private-function boundary recovery", "Argument and return-value inference", "SSA-like memory and stronger structurization"],
+  },
+  research: {
+    label: "Research",
+    status: "Roadmap profile",
+    summary: "Experimental investigation for difficult or adversarial bytecode.",
+    capabilities: ["Path exploration and merged symbolic states", "Advanced storage and mapping inference", "Improved event and error recovery", "Experimental hard-block analysis"],
+  },
+};
 
 export type SecurityFinding = {
   id: string;
@@ -20,6 +42,7 @@ export type AnalysisReport = {
   id: string;
   createdAt: string;
   mode: AnalysisMode;
+  qualityTier: QualityTier;
   bytecode: string;
   bytecodePreview: string;
   bytecodeLength: number;
@@ -107,7 +130,7 @@ function buildPseudoSolidity(functions: RecoveredFunction[], hasDelegateCall: bo
   return ["contract RecoveredContract {", "  // Local mobile reconstruction", `  ${headers.replace(/\n/g, "\n  ")}`, indicators ? `  ${indicators}` : "", "}"].filter(Boolean).join("\n");
 }
 
-export function buildAnalysisReport(input: string, mode: AnalysisMode): AnalysisReport {
+export function buildAnalysisReport(input: string, mode: AnalysisMode, qualityTier: QualityTier = "fast"): AnalysisReport {
   const bytecode = normalizeBytecode(input);
   const functions = extractFunctions(bytecode);
   const hasDelegateCall = bytecode.includes("f4");
@@ -163,6 +186,7 @@ export function buildAnalysisReport(input: string, mode: AnalysisMode): Analysis
     id: `analysis-${Date.now()}`,
     createdAt: new Date().toISOString(),
     mode,
+    qualityTier,
     bytecode,
     bytecodePreview: `${bytecode.slice(0, 18)}…${bytecode.slice(-12)}`,
     bytecodeLength,

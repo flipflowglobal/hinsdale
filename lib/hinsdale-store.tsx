@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { AnalysisReport, AnalysisMode } from "@/lib/hinsdale-data";
+import type { AnalysisReport, AnalysisMode, QualityTier } from "@/lib/hinsdale-data";
 
 type Preferences = {
   historyEnabled: boolean;
   defaultMode: AnalysisMode;
+  qualityTier: QualityTier;
 };
 
 type HinsdaleContextValue = {
@@ -20,7 +21,7 @@ type HinsdaleContextValue = {
 
 const REPORTS_KEY = "hinsdale.mobile.reports.v1";
 const PREFERENCES_KEY = "hinsdale.mobile.preferences.v1";
-const DEFAULT_PREFERENCES: Preferences = { historyEnabled: true, defaultMode: "full" };
+const DEFAULT_PREFERENCES: Preferences = { historyEnabled: true, defaultMode: "full", qualityTier: "fast" };
 const HinsdaleContext = createContext<HinsdaleContextValue | null>(null);
 
 export function HinsdaleProvider({ children }: { children: ReactNode }) {

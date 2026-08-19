@@ -4,7 +4,7 @@ import { type ComponentProps, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { formatByteCount, formatReportTime, riskAppearance, type AnalysisReport } from "@/lib/hinsdale-data";
+import { QUALITY_TIER_DETAILS, formatByteCount, formatReportTime, riskAppearance, type AnalysisReport } from "@/lib/hinsdale-data";
 import { useHinsdale } from "@/lib/hinsdale-store";
 
 type ReportSection = "Overview" | "Security" | "Functions" | "Source";
@@ -32,6 +32,8 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 
 function Overview({ report }: { report: AnalysisReport }) {
   const risk = riskAppearance(report.riskLevel);
+  const qualityTier = report.qualityTier ?? "fast";
+  const profile = QUALITY_TIER_DETAILS[qualityTier];
   return (
     <View style={styles.sectionStack}>
       <View style={styles.metricGrid}>
@@ -63,6 +65,13 @@ function Overview({ report }: { report: AnalysisReport }) {
       <View style={styles.noteCard}>
         <MaterialIcons name="info-outline" size={19} color="#9DAAB0" />
         <Text style={styles.noteText}>This local companion inspects bytecode indicators and known selectors. Use the Hinsdale Rust pipeline for a complete symbolic decompilation and audit.</Text>
+      </View>
+      <View style={styles.profileCard}>
+        <View style={styles.profileHeader}>
+          <View><Text style={styles.profileEyebrow}>REQUESTED ENGINE PROFILE</Text><Text style={styles.profileTitle}>{profile.label}</Text></View>
+          <View style={[styles.profileStatus, qualityTier === "fast" && styles.profileStatusAvailable]}><Text style={[styles.profileStatusText, qualityTier === "fast" && styles.profileStatusTextAvailable]}>{profile.status}</Text></View>
+        </View>
+        <Text style={styles.profileDescription}>{qualityTier === "fast" ? "This report used the local Fast inspection." : `This report records the ${profile.label} roadmap profile. The mobile client executed Fast local inspection; advanced capabilities require a connected engine.`}</Text>
       </View>
     </View>
   );
@@ -220,6 +229,15 @@ const styles = StyleSheet.create({
   indicatorText: { color: "#C7D1D5", flex: 1, fontSize: 13, lineHeight: 18 },
   noteCard: { alignItems: "flex-start", backgroundColor: "#151C20", borderColor: "#2B353B", borderRadius: 14, borderWidth: 1, flexDirection: "row", gap: 10, padding: 14 },
   noteText: { color: "#9DAAB0", flex: 1, fontSize: 12, lineHeight: 17 },
+  profileCard: { backgroundColor: "#161D21", borderColor: "#2B353B", borderRadius: 14, borderWidth: 1, padding: 14 },
+  profileHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  profileEyebrow: { color: "#718087", fontSize: 9, fontWeight: "900", letterSpacing: 0.9 },
+  profileTitle: { color: "#F4F7F8", fontSize: 17, fontWeight: "800", marginTop: 2 },
+  profileStatus: { backgroundColor: "#313136", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+  profileStatusAvailable: { backgroundColor: "#10362D" },
+  profileStatusText: { color: "#C7D1D5", fontSize: 10, fontWeight: "800" },
+  profileStatusTextAvailable: { color: "#47D7AC" },
+  profileDescription: { color: "#9DAAB0", fontSize: 12, lineHeight: 17, marginTop: 11 },
   severityPill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   severityText: { fontSize: 11, fontWeight: "800" },
   findingTitle: { color: "#F4F7F8", fontSize: 16, fontWeight: "800", marginTop: 12 },

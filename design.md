@@ -43,3 +43,21 @@ The brand relies on a deep charcoal canvas (**#101315**) to evoke a technical an
 ## Scope Decision
 
 The mobile build delivers a high-fidelity interaction model and local sample-report experience based on the source project’s report structure. Executing arbitrary EVM decompilation natively requires a portable analysis engine or remote service, neither of which is available in the referenced project’s current Rust/Python desktop implementation. The app therefore clearly represents analysis data locally and preserves an architecture that can be connected to an appropriate engine in a later release.
+
+## Quality Tiers and Capability Disclosure
+
+The expanded product uses three user-selectable **requested engine profiles**. The mobile client continues to execute only the Fast local inspection; Precise and Research are explicitly labeled as roadmap profiles until an external Hinsdale engine is connected. This protects against overstating analysis certainty while giving users a transparent view of the planned progression.
+
+| Requested profile | User-facing purpose | Planned technical focus | Current mobile behavior |
+|---|---|---|---|
+| **Fast** | Quick triage of submitted bytecode | Linear disassembly, selector recovery, basic security patterns, concise JSON-like summary | Executed locally in the mobile companion. |
+| **Precise** | Higher-confidence contract reconstruction | Global context-sensitive CFG and jump resolution, private-function recovery, argument/return inference, SSA-like memory model, and structurization | Displays the requested profile and its pending capabilities; it is not executed locally. |
+| **Research** | Investigation of hard or adversarial contracts | Path exploration, merged symbolic states, advanced storage/mapping inference, stronger event/error recovery, and experimental analyses | Displays the requested profile and its pending capabilities; it is not executed locally. |
+
+## Roadmap Screen
+
+The Settings screen provides a route to an engine roadmap instead of adding a fourth tab. The roadmap uses four connected chapters that remain readable in portrait orientation. **Control flow and recovery** communicates the mutual refinement of CFG resolution and private-function boundaries. **Symbolic lifting** connects constant folding, type propagation, storage/mapping inference, memory/SSA, and structurization to pseudo-Solidity readability. **Validation** presents a reproducible corpus, metric dashboard, CI, human samples, differential outputs, and fuzzing as a continuous feedback loop. **Distribution** sets stable IR, versioned JSON, quality tiers, documented limits, and reproducible builds as release requirements.
+
+## Confidence Language
+
+Every report identifies the requested profile and gives a plain-language confidence disclosure. The product differentiates **observed bytecode indicators**, **recovered known selectors**, and **future-engine inferences**. It makes no safety guarantee and explains that risk signals require full symbolic review and human verification before users make security decisions.

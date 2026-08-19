@@ -4,7 +4,7 @@ import { type ComponentProps, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { SAMPLE_BYTECODE, buildAnalysisReport, bytecodeValidationMessage, type AnalysisMode } from "@/lib/hinsdale-data";
+import { QUALITY_TIER_DETAILS, SAMPLE_BYTECODE, buildAnalysisReport, bytecodeValidationMessage, type AnalysisMode } from "@/lib/hinsdale-data";
 import { useHinsdale } from "@/lib/hinsdale-store";
 
 const MODES: { key: AnalysisMode; title: string; icon: ComponentProps<typeof MaterialIcons>["name"] }[] = [
@@ -24,7 +24,7 @@ export default function AnalyzeScreen() {
       Alert.alert("Bytecode needed", issue);
       return;
     }
-    const report = buildAnalysisReport(bytecode, mode);
+    const report = buildAnalysisReport(bytecode, mode, preferences.qualityTier);
     addReport(report);
     router.push({ pathname: "/report", params: { id: report.id } });
   };
@@ -68,6 +68,12 @@ export default function AnalyzeScreen() {
           ))}
         </View>
 
+        <Pressable onPress={() => router.push("/settings")} style={({ pressed }) => [styles.profileCard, pressed && styles.pressed]}>
+          <View style={styles.profileIcon}><MaterialIcons name={preferences.qualityTier === "fast" ? "bolt" : preferences.qualityTier === "precise" ? "tune" : "science"} size={19} color="#2DD4E9" /></View>
+          <View style={styles.profileCopy}><Text style={styles.profileEyebrow}>REQUESTED ENGINE PROFILE</Text><Text style={styles.profileTitle}>{QUALITY_TIER_DETAILS[preferences.qualityTier].label} <Text style={styles.profileStatus}>· {QUALITY_TIER_DETAILS[preferences.qualityTier].status}</Text></Text></View>
+          <MaterialIcons name="chevron-right" size={21} color="#718087" />
+        </Pressable>
+
         <Pressable onPress={runAnalysis} style={({ pressed }) => [styles.analyzeButton, pressed && styles.primaryPressed]}>
           <MaterialIcons name="play-arrow" size={20} color="#101315" />
           <Text style={styles.analyzeText}>Analyze bytecode</Text>
@@ -100,6 +106,12 @@ const styles = StyleSheet.create({
   modeCardActive: { backgroundColor: "#15313A", borderColor: "#2DD4E9" },
   modeTitle: { color: "#9DAAB0", fontSize: 11, fontWeight: "700" },
   modeTitleActive: { color: "#D5F5F8" },
+  profileCard: { alignItems: "center", backgroundColor: "#161D21", borderColor: "#2B353B", borderRadius: 14, borderWidth: 1, flexDirection: "row", marginBottom: 14, padding: 12 },
+  profileIcon: { alignItems: "center", backgroundColor: "#15313A", borderRadius: 10, height: 36, justifyContent: "center", width: 36 },
+  profileCopy: { flex: 1, marginLeft: 10 },
+  profileEyebrow: { color: "#718087", fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
+  profileTitle: { color: "#F4F7F8", fontSize: 13, fontWeight: "800", marginTop: 3 },
+  profileStatus: { color: "#9DAAB0", fontSize: 11, fontWeight: "600" },
   analyzeButton: { alignItems: "center", backgroundColor: "#2DD4E9", borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 52 },
   analyzeText: { color: "#101315", fontSize: 15, fontWeight: "900" },
   privacyNote: { alignItems: "flex-start", flexDirection: "row", gap: 8, marginTop: 19, paddingHorizontal: 5 },

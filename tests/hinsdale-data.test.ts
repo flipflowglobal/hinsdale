@@ -24,4 +24,10 @@ describe("Hinsdale local analysis model", () => {
     expect(report.findings).toHaveLength(0);
     expect(report.riskScore).toBe(0);
   });
+
+  it("records the requested roadmap profile without overstating local execution", () => {
+    const report = buildAnalysisReport(SAMPLE_BYTECODE, "full", "precise");
+    expect(report.qualityTier).toBe("precise");
+    expect(report.functions.map((item) => item.signature)).toContain("transfer(address,uint256)");
+  });
 });
