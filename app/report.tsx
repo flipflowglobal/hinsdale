@@ -71,7 +71,7 @@ function Overview({ report }: { report: AnalysisReport }) {
           <View><Text style={styles.profileEyebrow}>REQUESTED ENGINE PROFILE</Text><Text style={styles.profileTitle}>{profile.label}</Text></View>
           <View style={[styles.profileStatus, qualityTier === "fast" && styles.profileStatusAvailable]}><Text style={[styles.profileStatusText, qualityTier === "fast" && styles.profileStatusTextAvailable]}>{profile.status}</Text></View>
         </View>
-        <Text style={styles.profileDescription}>{qualityTier === "fast" ? "This report used the local Fast inspection." : `This report records the ${profile.label} roadmap profile. The mobile client executed Fast local inspection; advanced capabilities require a connected engine.`}</Text>
+        <Text style={styles.profileDescription}>{qualityTier === "fast" ? "This report used the local Fast inspection. Rust engine foundations are available in the workspace but are not connected to the mobile runtime." : `This report records the ${profile.label} engine profile. The mobile client executed Fast local inspection; the engine foundations require a secure service or native bridge before they can execute here.`}</Text>
       </View>
     </View>
   );

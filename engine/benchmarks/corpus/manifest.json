@@ -1,0 +1,16 @@
+{
+  "corpus_version": "1.0.0",
+  "description": "Reproducible public EVM fixtures. New corpora should retain fixture provenance and expected observations.",
+  "fixtures": [
+    {
+      "id": "eip1167-runtime-minimal-proxy",
+      "path": "eip1167_minimal_proxy.hex",
+      "source": "https://eips.ethereum.org/EIPS/eip-1167",
+      "license": "CC0",
+      "expected": {
+        "has_delegatecall": true,
+        "minimum_resolved_jumps": 1
+      }
+    }
+  ]
+}

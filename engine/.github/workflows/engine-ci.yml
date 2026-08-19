@@ -1,0 +1,27 @@
+name: Engine CI
+
+on:
+  push:
+    paths: ["engine/**"]
+  pull_request:
+    paths: ["engine/**"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format
+        run: cargo fmt --check
+      - name: Compile
+        run: cargo check --all-targets
+      - name: Test
+        run: cargo test
+      - name: Benchmark contract
+        run: cargo run --bin hinsdale-bench -- --tier precise > benchmark-report.json

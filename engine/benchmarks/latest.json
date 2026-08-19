@@ -1,0 +1,22 @@
+{
+  "schema_version": "hinsdale.report/v2",
+  "corpus_version": "1.0.0",
+  "quality_tier": "precise",
+  "fixtures": [
+    {
+      "id": "eip1167-runtime-minimal-proxy",
+      "source": "https://eips.ethereum.org/EIPS/eip-1167",
+      "bytes": 45,
+      "blocks": 3,
+      "cfg_edges": 2,
+      "resolved_jumps": 1,
+      "unresolved_jumps": 0,
+      "public_functions": 0,
+      "private_function_candidates": 1,
+      "event_topics": 0,
+      "mapping_candidates": 0,
+      "elapsed_ms": 0.251252,
+      "passed_expectations": true
+    }
+  ]
+}

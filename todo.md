@@ -11,3 +11,11 @@
 - [x] Add a mobile roadmap and evaluation-infrastructure view covering benchmarks, CI, differential testing, and fuzzing
 - [x] Document current analysis limits and confidence expectations in the mobile experience
 - [x] Validate the expanded roadmap and quality-tier user flows
+- [x] Map every requested decompiler capability to concrete Rust-engine increments and acceptance tests
+- [x] Implement global CFG context, jump-target confidence, and private-function recovery foundations
+- [x] Implement argument/return, memory/SSA, type/storage, event/error, and structurization foundations
+- [x] Add selectable Fast, Precise, and Research execution profiles to the engine interface and schema
+- [x] Add a reproducible benchmark corpus, metric collection, differential-run scaffolding, and CI workflow
+- [x] Add versioned JSON schema, reproducible container build, and documented accuracy/limitation contract
+- [x] Surface live engine-tier capability status and evidence in the mobile experience
+- [x] Compile and test the engine and mobile updates end to end

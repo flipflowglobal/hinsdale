@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { QUALITY_TIER_DETAILS, type QualityTier } from "@/lib/hinsdale-data";
+import { ENGINE_BENCHMARK, ENGINE_IMPLEMENTATION } from "@/lib/engine-status";
 
 const WORKSTREAMS = [
   {
@@ -72,6 +73,16 @@ export default function RoadmapScreen() {
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
       <View style={styles.hero}><Text style={styles.eyebrow}>HINSDALE ENGINE PROGRAM</Text><Text style={styles.heroTitle}>From bytecode indicators to defensible reconstruction.</Text><Text style={styles.heroBody}>The mobile companion remains local and lightweight today. These workstreams define the engine capabilities and evidence needed before stronger claims are made.</Text></View>
 
+      <Text style={styles.sectionLabel}>IMPLEMENTATION SNAPSHOT</Text>
+      <View style={styles.snapshotCard}>
+        <Text style={styles.snapshotTitle}>Rust engine foundations are included in this workspace.</Text>
+        <Text style={styles.snapshotBody}>The mobile companion does not invoke the Rust engine yet. It continues to run the local Fast inspection and labels engine output as unavailable until a secure service or native bridge is connected.</Text>
+        {ENGINE_IMPLEMENTATION.map((item) => <View key={item.title} style={styles.snapshotItem}><View style={styles.snapshotDot} /><View style={styles.snapshotCopy}><View style={styles.snapshotHeading}><Text style={styles.snapshotItemTitle}>{item.title}</Text><Text style={styles.snapshotStatus}>{item.status}</Text></View><Text style={styles.snapshotDetail}>{item.detail}</Text></View></View>)}
+      </View>
+
+      <Text style={styles.sectionLabel}>REPRODUCIBLE BASELINE</Text>
+      <View style={styles.benchmarkCard}><View style={styles.benchmarkHeader}><View><Text style={styles.benchmarkTitle}>{ENGINE_BENCHMARK.fixture}</Text><Text style={styles.benchmarkMeta}>{ENGINE_BENCHMARK.tier} profile · {ENGINE_BENCHMARK.status}</Text></View><MaterialIcons name="verified" size={22} color="#47D7AC" /></View><View style={styles.metricGrid}><View style={styles.metric}><Text style={styles.metricValue}>{ENGINE_BENCHMARK.bytes}</Text><Text style={styles.metricLabel}>bytes</Text></View><View style={styles.metric}><Text style={styles.metricValue}>{ENGINE_BENCHMARK.blocks}</Text><Text style={styles.metricLabel}>blocks</Text></View><View style={styles.metric}><Text style={styles.metricValue}>{ENGINE_BENCHMARK.resolvedJumps}</Text><Text style={styles.metricLabel}>resolved jumps</Text></View><View style={styles.metric}><Text style={styles.metricValue}>{ENGINE_BENCHMARK.unresolvedJumps}</Text><Text style={styles.metricLabel}>unresolved</Text></View></View><Text style={styles.benchmarkSource}>Fixture provenance: {ENGINE_BENCHMARK.source}</Text></View>
+
       <Text style={styles.sectionLabel}>QUALITY TIERS</Text>
       {(["fast", "precise", "research"] as QualityTier[]).map((tier) => <TierCard key={tier} tier={tier} />)}
 
@@ -97,6 +108,25 @@ const styles = StyleSheet.create({
   heroTitle: { color: "#F4F7F8", fontSize: 23, fontWeight: "800", letterSpacing: -0.5, lineHeight: 28, marginTop: 7 },
   heroBody: { color: "#C7D1D5", fontSize: 13, lineHeight: 19, marginTop: 9 },
   sectionLabel: { color: "#718087", fontSize: 10, fontWeight: "900", letterSpacing: 1.1, marginTop: 10 },
+  snapshotCard: { backgroundColor: "#1C2226", borderColor: "#2B353B", borderRadius: 16, borderWidth: 1, padding: 14 },
+  snapshotTitle: { color: "#F4F7F8", fontSize: 14, fontWeight: "800" },
+  snapshotBody: { color: "#9DAAB0", fontSize: 12, lineHeight: 17, marginTop: 6 },
+  snapshotItem: { alignItems: "flex-start", flexDirection: "row", gap: 8, marginTop: 13 },
+  snapshotDot: { backgroundColor: "#47D7AC", borderRadius: 4, height: 7, marginTop: 5, width: 7 },
+  snapshotCopy: { flex: 1 },
+  snapshotHeading: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  snapshotItemTitle: { color: "#D5F5F8", fontSize: 12, fontWeight: "800" },
+  snapshotStatus: { color: "#47D7AC", fontSize: 9, fontWeight: "800" },
+  snapshotDetail: { color: "#9DAAB0", fontSize: 11, lineHeight: 16, marginTop: 3 },
+  benchmarkCard: { backgroundColor: "#161D21", borderColor: "#47D7AC66", borderRadius: 16, borderWidth: 1, padding: 14 },
+  benchmarkHeader: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between" },
+  benchmarkTitle: { color: "#F4F7F8", fontSize: 14, fontWeight: "800" },
+  benchmarkMeta: { color: "#47D7AC", fontSize: 11, fontWeight: "700", marginTop: 4 },
+  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
+  metric: { backgroundColor: "#101315", borderRadius: 10, flexBasis: "46%", flexGrow: 1, padding: 10 },
+  metricValue: { color: "#F4F7F8", fontSize: 16, fontWeight: "800" },
+  metricLabel: { color: "#718087", fontSize: 10, marginTop: 2 },
+  benchmarkSource: { color: "#718087", fontSize: 10, lineHeight: 15, marginTop: 12 },
   tierCard: { backgroundColor: "#1C2226", borderColor: "#2B353B", borderRadius: 16, borderWidth: 1, padding: 14 },
   tierTop: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   tierName: { color: "#F4F7F8", fontSize: 17, fontWeight: "800" },
