@@ -1,33 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { SAMPLE_BYTECODE, buildAnalysisReport, bytecodeValidationMessage, normalizeBytecode } from "../lib/hinsdale-data";
+import { MAX_EMBEDDED_BYTECODE_BYTES, bytecodeValidationMessage, normalizeBytecode } from "../lib/hinsdale-data";
 
-describe("Hinsdale local analysis model", () => {
-  it("normalizes common bytecode input formats", () => {
+describe("embedded engine input contract", () => {
+  it("normalizes hexadecimal input without altering byte order", () => {
     expect(normalizeBytecode(" 0x60 80 60 40 ")).toBe("60806040");
   });
 
-  it("rejects malformed bytecode before analysis", () => {
+  it("rejects malformed and incomplete hexadecimal bytecode", () => {
     expect(bytecodeValidationMessage("0x6080xz")).toMatch(/hexadecimal/i);
     expect(bytecodeValidationMessage("0x608")).toMatch(/complete pair/i);
   });
 
-  it("recovers known selectors and reports security indicators", () => {
-    const report = buildAnalysisReport(SAMPLE_BYTECODE, "full");
-    expect(report.functions.map((item) => item.signature)).toContain("transfer(address,uint256)");
-    expect(report.findings.length).toBeGreaterThan(0);
-    expect(report.riskScore).toBeGreaterThan(0);
-  });
-
-  it("suppresses security findings in signatures-only mode", () => {
-    const report = buildAnalysisReport(SAMPLE_BYTECODE, "signatures");
-    expect(report.findings).toHaveLength(0);
-    expect(report.riskScore).toBe(0);
-  });
-
-  it("records the requested roadmap profile without overstating local execution", () => {
-    const report = buildAnalysisReport(SAMPLE_BYTECODE, "full", "precise");
-    expect(report.qualityTier).toBe("precise");
-    expect(report.functions.map((item) => item.signature)).toContain("transfer(address,uint256)");
+  it("enforces the embedded engine bytecode limit before native execution", () => {
+    expect(bytecodeValidationMessage("60".repeat(MAX_EMBEDDED_BYTECODE_BYTES + 1))).toMatch(/exceeds/i);
   });
 });

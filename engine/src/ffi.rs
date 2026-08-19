@@ -10,13 +10,121 @@
 //   - hins_free_str called for every string from hins_pseudo_source / hins_json
 //   - hins_analyze / hins_batch_analyze are fully thread-safe
 
-use crate::{analyze, parse_hex, HinsdaleReport};
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
+
+use crate::analysis::{AnalysisOptions, QualityTier};
+use crate::{analyze, analyze_with_options, parse_hex, HinsdaleReport};
+use serde::Serialize;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int};
 
 // ── Opaque context ─────────────────────────────────────────────────────────
 
 pub struct HinsdaleCtx(HinsdaleReport);
+
+const MOBILE_MAX_INPUT_BYTES: usize = 512 * 1024;
+
+#[derive(Serialize)]
+struct MobileBridgeError<'a> {
+    code: &'a str,
+    message: String,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum MobileBridgeResponse<'a> {
+    Success {
+        ok: bool,
+        report: &'a HinsdaleReport,
+    },
+    Failure {
+        ok: bool,
+        error: MobileBridgeError<'a>,
+    },
+}
+
+fn mobile_json_error(code: &'static str, message: impl Into<String>) -> *mut c_char {
+    let response = MobileBridgeResponse::Failure {
+        ok: false,
+        error: MobileBridgeError {
+            code,
+            message: message.into(),
+        },
+    };
+    serde_json::to_string(&response)
+        .ok()
+        .and_then(|value| CString::new(value).ok())
+        .map(|value| value.into_raw())
+        .unwrap_or(std::ptr::null_mut())
+}
+
+/// Mobile-safe entry point returning an owned JSON envelope.
+/// The caller must release successful allocations with `hins_free_str`.
+#[no_mangle]
+pub extern "C" fn hins_analyze_enveloped_json(
+    hex_str: *const c_char,
+    tier_str: *const c_char,
+) -> *mut c_char {
+    std::panic::catch_unwind(|| {
+        if hex_str.is_null() || tier_str.is_null() {
+            return mobile_json_error("INVALID_INPUT", "Bytecode and quality tier are required.");
+        }
+        let hex = match unsafe { CStr::from_ptr(hex_str) }.to_str() {
+            Ok(value) => value,
+            Err(_) => return mobile_json_error("INVALID_INPUT", "Bytecode must be valid UTF-8."),
+        };
+        let tier = match unsafe { CStr::from_ptr(tier_str) }.to_str() {
+            Ok(value) => value,
+            Err(_) => {
+                return mobile_json_error("INVALID_TIER", "Quality tier must be valid UTF-8.")
+            }
+        };
+        let quality_tier = match QualityTier::parse(tier) {
+            Some(value) => value,
+            None => {
+                return mobile_json_error(
+                    "INVALID_TIER",
+                    "Quality tier must be fast, precise, or research.",
+                )
+            }
+        };
+        let bytecode = match parse_hex(hex) {
+            Ok(value) if !value.is_empty() => value,
+            Ok(_) => return mobile_json_error("INVALID_INPUT", "Bytecode must not be empty."),
+            Err(message) => return mobile_json_error("INVALID_INPUT", message),
+        };
+        if bytecode.len() > MOBILE_MAX_INPUT_BYTES {
+            return mobile_json_error(
+                "INPUT_TOO_LARGE",
+                format!("Bytecode exceeds the {MOBILE_MAX_INPUT_BYTES} byte mobile limit."),
+            );
+        }
+        let report = analyze_with_options(&bytecode, AnalysisOptions::for_tier(quality_tier));
+        let response = MobileBridgeResponse::Success {
+            ok: true,
+            report: &report,
+        };
+        serde_json::to_string(&response)
+            .ok()
+            .and_then(|value| CString::new(value).ok())
+            .map(|value| value.into_raw())
+            .unwrap_or_else(|| {
+                mobile_json_error(
+                    "ENGINE_FAILURE",
+                    "Unable to serialize embedded analysis output.",
+                )
+            })
+    })
+    .unwrap_or_else(|_| {
+        mobile_json_error("ENGINE_FAILURE", "Embedded engine terminated unexpectedly.")
+    })
+}
+
+#[no_mangle]
+pub extern "C" fn hins_mobile_runtime_info() -> *const c_char {
+    c"{\"version\":\"1.0.0\",\"schemaVersion\":\"hinsdale.report/v2\",\"maxInputBytes\":524288}"
+        .as_ptr()
+}
 
 // ── HinsInstr — 128 bytes, fully explicit layout ───────────────────────────
 //
@@ -291,9 +399,9 @@ pub extern "C" fn hins_instr_bulk(
     }
     let instrs = &report.disassembly.instructions;
     let n = instrs.len().min(buf_count as usize);
-    for i in 0..n {
+    for (i, instruction) in instrs.iter().enumerate().take(n) {
         unsafe {
-            *buf.add(i) = HinsInstr::from_instr(&instrs[i]);
+            *buf.add(i) = HinsInstr::from_instr(instruction);
         }
     }
     n as u32
@@ -319,8 +427,8 @@ pub extern "C" fn hins_instr_bulk_into(
     let instrs = &report.disassembly.instructions;
     let n = instrs.len().min(buf_count as usize);
     // Write each HinsInstr directly into dst at stride 128
-    for i in 0..n {
-        let ins_c = HinsInstr::from_instr(&instrs[i]);
+    for (i, instruction) in instrs.iter().enumerate().take(n) {
+        let ins_c = HinsInstr::from_instr(instruction);
         unsafe {
             let slot = dst.add(i * 128) as *mut HinsInstr;
             *slot = ins_c;
@@ -553,9 +661,9 @@ pub extern "C" fn hins_jumpdests(ctx: *const HinsdaleCtx, buf: *mut u32, buf_cou
     }
     let dests = &report.disassembly.jumpdests;
     let n = dests.len().min(buf_count as usize);
-    for i in 0..n {
+    for (i, destination) in dests.iter().enumerate().take(n) {
         unsafe {
-            *buf.add(i) = dests[i] as u32;
+            *buf.add(i) = *destination as u32;
         }
     }
     n as u32
@@ -565,7 +673,7 @@ pub extern "C" fn hins_jumpdests(ctx: *const HinsdaleCtx, buf: *mut u32, buf_cou
 
 #[no_mangle]
 pub extern "C" fn hins_version() -> *const c_char {
-    b"1.0.0-cython\0".as_ptr() as *const c_char
+    c"1.0.0-cython".as_ptr()
 }
 
 // ── Struct size query (for runtime verification) ──────────────────────────

@@ -1,0 +1,37 @@
+name: Embedded Engine Packaging
+
+on:
+  push:
+    paths: ["engine/**", "modules/hinsdale-engine/**", "scripts/verify-embedded-engine.mjs"]
+  pull_request:
+    paths: ["engine/**", "modules/hinsdale-engine/**", "scripts/verify-embedded-engine.mjs"]
+
+jobs:
+  android-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - name: Install Android NDK
+        run: yes | sdkmanager --install "ndk;27.1.12297006"
+      - name: Build Rust Android libraries
+        env: { ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.1.12297006 }
+        run: bash modules/hinsdale-engine/scripts/build-android.sh
+      - name: Verify Android outputs
+        run: test -s modules/hinsdale-engine/android/src/main/jniLibs/arm64-v8a/libhinsdale_engine.so && test -s modules/hinsdale-engine/android/src/main/jniLibs/armeabi-v7a/libhinsdale_engine.so
+      - uses: actions/upload-artifact@v4
+        with: { name: hinsdale-android-libraries, path: modules/hinsdale-engine/android/src/main/jniLibs }
+
+  ios-artifacts:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Rust iOS framework
+        run: bash modules/hinsdale-engine/scripts/build-ios.sh
+      - name: Verify iOS output
+        run: test -d modules/hinsdale-engine/ios/HinsdaleEngine.xcframework
+      - uses: actions/upload-artifact@v4
+        with: { name: hinsdale-ios-framework, path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework }

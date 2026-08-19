@@ -8,7 +8,7 @@ authors     = ["Aureon/DL System"]
 
 [lib]
 name    = "hinsdale"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib", "rlib", "staticlib"]
 # cdylib  → libhinsdale.so  (linked by Cython _hinsdale.so)
 # rlib    → libhinsdale.rlib (used by hinsdale-cli binary)
 

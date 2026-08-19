@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { AnalysisReport, AnalysisMode, QualityTier } from "@/lib/hinsdale-data";
+import { isPersistedEmbeddedReport, type AnalysisReport, type AnalysisMode, type QualityTier } from "@/lib/hinsdale-data";
 
 type Preferences = {
   historyEnabled: boolean;
@@ -19,7 +19,7 @@ type HinsdaleContextValue = {
   updatePreferences: (next: Partial<Preferences>) => void;
 };
 
-const REPORTS_KEY = "hinsdale.mobile.reports.v1";
+const REPORTS_KEY = "hinsdale.mobile.reports.v2";
 const PREFERENCES_KEY = "hinsdale.mobile.preferences.v1";
 const DEFAULT_PREFERENCES: Preferences = { historyEnabled: true, defaultMode: "full", qualityTier: "fast" };
 const HinsdaleContext = createContext<HinsdaleContextValue | null>(null);
@@ -33,7 +33,10 @@ export function HinsdaleProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const [storedReports, storedPreferences] = await AsyncStorage.multiGet([REPORTS_KEY, PREFERENCES_KEY]);
-        if (storedReports[1]) setReports(JSON.parse(storedReports[1]) as AnalysisReport[]);
+        if (storedReports[1]) {
+          const parsed: unknown = JSON.parse(storedReports[1]);
+          if (Array.isArray(parsed)) setReports(parsed.filter(isPersistedEmbeddedReport));
+        }
         if (storedPreferences[1]) setPreferences({ ...DEFAULT_PREFERENCES, ...(JSON.parse(storedPreferences[1]) as Partial<Preferences>) });
       } finally {
         setIsReady(true);

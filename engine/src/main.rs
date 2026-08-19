@@ -48,7 +48,7 @@ fn main() {
         .windows(2)
         .find(|pair| pair[0] == "--tier")
         .map(|pair| {
-            hinsdale::analysis::QualityTier::from_str(&pair[1]).unwrap_or_else(|| {
+            hinsdale::analysis::QualityTier::parse(&pair[1]).unwrap_or_else(|| {
                 eprintln!(
                     "[ERROR] Unknown quality tier '{}'. Use fast, precise, or research.",
                     pair[1]
@@ -271,9 +271,6 @@ fn main() {
 
 fn print_disassembly(report: &hinsdale::HinsdaleReport) {
     println!("── DISASSEMBLY ───────────────────────────────────────────────────");
-    let jumpdest_set: std::collections::HashSet<usize> =
-        report.disassembly.jumpdests.iter().copied().collect();
-
     for ins in &report.disassembly.instructions {
         let marker = if ins.opcode == 0x5b { "◆" } else { " " };
         let imm = ins
@@ -282,7 +279,7 @@ fn print_disassembly(report: &hinsdale::HinsdaleReport) {
             .map(|h| format!(" 0x{h}"))
             .unwrap_or_default();
         // Flag jumps that target valid destinations
-        let jump_ann = if (ins.opcode == 0x56 || ins.opcode == 0x57) {
+        let jump_ann = if ins.opcode == 0x56 || ins.opcode == 0x57 {
             " ⤵"
         } else {
             ""

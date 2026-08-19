@@ -19,3 +19,13 @@
 - [x] Add versioned JSON schema, reproducible container build, and documented accuracy/limitation contract
 - [x] Surface live engine-tier capability status and evidence in the mobile experience
 - [x] Compile and test the engine and mobile updates end to end
+- [x] Audit every demo input, placeholder, stub, simulated metric, and unsupported claim in the engine and mobile client
+- [x] Remove sample-bytecode shortcuts and local fabricated analysis behavior from production application flows
+- [x] Superseded remote service contract with embedded Rust ABI validation, versioned response schema checks, and typed native failure handling
+- [x] Replace static benchmark display with verifiable engine-run metadata and explicit unavailable states
+- [x] Harden Rust CLI, JSON schema, error handling, test coverage, release packaging, and operational documentation
+- [ ] Build and verify the Android and iOS native binary artifacts on supported release runners before distribution
+- [x] Define the embedded Rust engine ABI, platform support matrix, resource limits, and application-facing error contract
+- [x] Add native Android and iOS bindings that package the Rust engine with the mobile application
+- [x] Replace all local heuristic/demo analysis paths with embedded Rust engine execution
+- [x] Add native bridge integration tests and release packaging checks for Android and iOS artifacts

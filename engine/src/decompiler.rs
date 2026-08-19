@@ -319,16 +319,16 @@ fn reconstruct_params(group: &FnGroup) -> Vec<ParamOut> {
                 .map(|t| {
                     if t == "address" {
                         EvmType::Address
-                    } else if t.starts_with("uint") {
-                        EvmType::Uint(t[4..].parse().unwrap_or(256))
-                    } else if t.starts_with("int") {
-                        EvmType::Int(t[3..].parse().unwrap_or(256))
+                    } else if let Some(width) = t.strip_prefix("uint") {
+                        EvmType::Uint(width.parse().unwrap_or(256))
+                    } else if let Some(width) = t.strip_prefix("int") {
+                        EvmType::Int(width.parse().unwrap_or(256))
                     } else if t == "bool" {
                         EvmType::Bool
                     } else if t == "bytes" {
                         EvmType::BytesDynamic
-                    } else if t.starts_with("bytes") {
-                        EvmType::Bytes(t[5..].parse().unwrap_or(32))
+                    } else if let Some(width) = t.strip_prefix("bytes") {
+                        EvmType::Bytes(width.parse().unwrap_or(32))
                     } else {
                         EvmType::Unknown
                     }
@@ -545,7 +545,7 @@ fn emit_solidity(
     // Event stubs
     if !sigs.event_topics.is_empty() {
         s.push_str("    // ── Events (topic hashes from LOG patterns) ──────────────\n");
-        for (i, event) in sigs.events.iter().enumerate() {
+        for event in &sigs.events {
             let label = event.known_name.as_deref().unwrap_or("UnknownEvent(...)");
             s.push_str(&format!(
                 "    // event {label}; // topic: {} | confidence {:.2}\n",

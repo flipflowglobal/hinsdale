@@ -157,10 +157,8 @@ pub fn build_cfg(disasm: &Disassembly) -> CFG {
             // JUMPDEST
             leaders.insert(idx);
         }
-        if is_terminal(ins.opcode) || is_jump(ins.opcode) {
-            if idx + 1 < instrs.len() {
-                leaders.insert(idx + 1); // next instr starts new block
-            }
+        if (is_terminal(ins.opcode) || is_jump(ins.opcode)) && idx + 1 < instrs.len() {
+            leaders.insert(idx + 1); // next instr starts new block
         }
     }
 

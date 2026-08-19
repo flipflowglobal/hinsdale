@@ -2,41 +2,17 @@ export type AnalysisMode = "full" | "security" | "signatures";
 export type RiskLevel = "low" | "elevated" | "high" | "critical";
 export type QualityTier = "fast" | "precise" | "research";
 
+export const ENGINE_REPORT_SCHEMA = "hinsdale.report/v2";
+export const MAX_EMBEDDED_BYTECODE_BYTES = 512 * 1024;
+
 export const QUALITY_TIER_DETAILS: Record<QualityTier, { label: string; status: string; summary: string; capabilities: string[] }> = {
-  fast: {
-    label: "Fast",
-    status: "Available locally",
-    summary: "Quick triage using selector recovery and lightweight bytecode indicators.",
-    capabilities: ["Linear bytecode inspection", "Known selector recovery", "Basic security indicators", "Concise local report"],
-  },
-  precise: {
-    label: "Precise",
-    status: "Roadmap profile",
-    summary: "Higher-confidence reconstruction through global control-flow and recovered function context.",
-    capabilities: ["Context-sensitive CFG and jump resolution", "Private-function boundary recovery", "Argument and return-value inference", "SSA-like memory and stronger structurization"],
-  },
-  research: {
-    label: "Research",
-    status: "Roadmap profile",
-    summary: "Experimental investigation for difficult or adversarial bytecode.",
-    capabilities: ["Path exploration and merged symbolic states", "Advanced storage and mapping inference", "Improved event and error recovery", "Experimental hard-block analysis"],
-  },
+  fast: { label: "Fast", status: "Embedded native engine", summary: "Bounded on-device triage with explicit unresolved control flow.", capabilities: ["Disassembly", "CFG summary", "Signature recovery", "Security report"] },
+  precise: { label: "Precise", status: "Embedded native engine", summary: "Expanded on-device reconstruction with bounded context and merged state.", capabilities: ["Contextual CFG", "Private candidates", "Merged symbolic state", "Storage evidence"] },
+  research: { label: "Research", status: "Embedded native engine", summary: "Higher bounded exploration for difficult bytecode; verify all inferred output.", capabilities: ["Increased block visits", "Path evidence", "Mapping candidates", "Experimental observations"] },
 };
 
-export type SecurityFinding = {
-  id: string;
-  severity: "Low" | "Medium" | "High" | "Critical";
-  title: string;
-  description: string;
-  evidence: string;
-};
-
-export type RecoveredFunction = {
-  selector: string;
-  signature: string | null;
-  confidence: "Confirmed" | "Inferred";
-  isView: boolean;
-};
+export type SecurityFinding = { id: string; severity: string; title: string; description: string; evidence: string };
+export type RecoveredFunction = { selector: string; signature: string | null; confidence: string; isView: boolean };
 
 export type AnalysisReport = {
   id: string;
@@ -56,22 +32,17 @@ export type AnalysisReport = {
   isProxy: boolean;
   callCount: number;
   storageWrites: number;
+  schemaVersion: string;
+  elapsedMs: number;
+  limitations: string;
+  privateFunctionCandidateCount: number;
 };
 
-const KNOWN_SELECTORS: Record<string, { name: string; isView: boolean }> = {
-  "06fdde03": { name: "name()", isView: true },
-  "095ea7b3": { name: "approve(address,uint256)", isView: false },
-  "18160ddd": { name: "totalSupply()", isView: true },
-  "23b872dd": { name: "transferFrom(address,address,uint256)", isView: false },
-  "313ce567": { name: "decimals()", isView: true },
-  "70a08231": { name: "balanceOf(address)", isView: true },
-  "95d89b41": { name: "symbol()", isView: true },
-  "a9059cbb": { name: "transfer(address,uint256)", isView: false },
-  "8da5cb5b": { name: "owner()", isView: true },
-};
+type JsonRecord = Record<string, unknown>;
 
-export const SAMPLE_BYTECODE =
-  "6080604052348015600f57600080fd5b5063a9059cbb14610035578063095ea7b31461005557806318160ddd1461007557806370a0823114610095575b600080fd5b600054f1f45aff";
+export class EngineReportValidationError extends Error {
+  constructor(message: string) { super(message); this.name = "EngineReportValidationError"; }
+}
 
 export function normalizeBytecode(value: string) {
   return value.replace(/\s+/g, "").replace(/^0x/i, "").toLowerCase();
@@ -83,140 +54,104 @@ export function bytecodeValidationMessage(value: string) {
   if (!/^[0-9a-f]+$/i.test(normalized)) return "Bytecode can contain only hexadecimal characters.";
   if (normalized.length % 2 !== 0) return "Bytecode must contain a complete pair of hexadecimal characters.";
   if (normalized.length < 8) return "Paste at least four bytes of EVM bytecode.";
+  if (normalized.length / 2 > MAX_EMBEDDED_BYTECODE_BYTES) return `Bytecode exceeds the ${MAX_EMBEDDED_BYTECODE_BYTES} byte on-device limit.`;
   return null;
 }
 
-function countOpcode(bytecode: string, opcode: string) {
-  return (bytecode.match(new RegExp(opcode, "g")) ?? []).length;
+function record(value: unknown, name: string): JsonRecord {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new EngineReportValidationError(`Embedded engine report is missing ${name}.`);
+  return value as JsonRecord;
 }
 
-function extractFunctions(bytecode: string): RecoveredFunction[] {
-  const functions: RecoveredFunction[] = [];
-  for (const [selector, metadata] of Object.entries(KNOWN_SELECTORS)) {
-    if (bytecode.includes(selector)) {
-      functions.push({
-        selector: `0x${selector}`,
-        signature: metadata.name,
-        confidence: "Confirmed",
-        isView: metadata.isView,
-      });
-    }
-  }
-  return functions;
+function string(value: unknown, name: string): string {
+  if (typeof value !== "string") throw new EngineReportValidationError(`Embedded engine report contains an invalid ${name}.`);
+  return value;
 }
 
-function calculateRiskLevel(score: number): RiskLevel {
+function number(value: unknown, name: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) throw new EngineReportValidationError(`Embedded engine report contains an invalid ${name}.`);
+  return value;
+}
+
+function boolean(value: unknown, name: string): boolean {
+  if (typeof value !== "boolean") throw new EngineReportValidationError(`Embedded engine report contains an invalid ${name}.`);
+  return value;
+}
+
+function list(value: unknown, name: string): unknown[] {
+  if (!Array.isArray(value)) throw new EngineReportValidationError(`Embedded engine report contains an invalid ${name}.`);
+  return value;
+}
+
+function riskLevel(score: number): RiskLevel {
   if (score >= 75) return "critical";
   if (score >= 50) return "high";
   if (score >= 25) return "elevated";
   return "low";
 }
 
-function buildPseudoSolidity(functions: RecoveredFunction[], hasDelegateCall: boolean, hasSelfDestruct: boolean) {
-  const headers = functions.length
-    ? functions
-        .slice(0, 4)
-        .map((fn) => `function ${fn.signature ?? "unknown"} ${fn.isView ? "external view" : "external"};`)
-        .join("\n")
-    : "// No known dispatcher selectors recovered.";
+export function reportFromEmbeddedEngine(raw: unknown, bytecode: string, mode: AnalysisMode, qualityTier: QualityTier): AnalysisReport {
+  const report = record(raw, "root object");
+  const schemaVersion = string(report.schema_version, "schema_version");
+  if (schemaVersion !== ENGINE_REPORT_SCHEMA) throw new EngineReportValidationError(`Unsupported embedded engine schema ${schemaVersion}.`);
+  const metadata = record(report.metadata, "metadata");
+  const disassembly = record(report.disassembly, "disassembly");
+  const cfg = record(report.cfg_summary, "cfg_summary");
+  const signatures = record(report.signatures, "signatures");
+  const security = record(report.security, "security");
+  const decompiled = record(report.decompiled, "decompiled");
+  const capabilities = record(report.capabilities, "capabilities");
 
-  const indicators = [
-    hasDelegateCall ? "// delegatecall-like opcode observed" : null,
-    hasSelfDestruct ? "// selfdestruct-like opcode observed" : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  return ["contract RecoveredContract {", "  // Local mobile reconstruction", `  ${headers.replace(/\n/g, "\n  ")}`, indicators ? `  ${indicators}` : "", "}"].filter(Boolean).join("\n");
-}
-
-export function buildAnalysisReport(input: string, mode: AnalysisMode, qualityTier: QualityTier = "fast"): AnalysisReport {
-  const bytecode = normalizeBytecode(input);
-  const functions = extractFunctions(bytecode);
-  const hasDelegateCall = bytecode.includes("f4");
-  const hasSelfDestruct = bytecode.includes("ff");
-  const callCount = countOpcode(bytecode, "f1") + countOpcode(bytecode, "f2") + countOpcode(bytecode, "fa");
-  const storageWrites = countOpcode(bytecode, "55");
-  const isProxy = hasDelegateCall && bytecode.includes("36");
-  const findings: SecurityFinding[] = [];
-
-  if (hasDelegateCall) {
-    findings.push({
-      id: "delegatecall",
-      severity: "High",
-      title: "DELEGATECALL indicator",
-      description: "A delegatecall opcode byte was observed. Confirm that its destination cannot be controlled by untrusted calldata before treating the contract as safe.",
-      evidence: "Opcode indicator: F4",
-    });
-  }
-  if (hasSelfDestruct) {
-    findings.push({
-      id: "selfdestruct",
-      severity: "Critical",
-      title: "SELFDESTRUCT indicator",
-      description: "A selfdestruct opcode byte was observed. Review access control and execution reachability in the complete contract context.",
-      evidence: "Opcode indicator: FF",
-    });
-  }
-  if (callCount > 0 && storageWrites > 0) {
-    findings.push({
-      id: "external-call-storage",
-      severity: "Medium",
-      title: "External-call and storage-write mix",
-      description: "Both call-like and storage-write opcode bytes appear in the submitted bytecode. Inspect ordering and return-value checks with a full EVM audit pipeline.",
-      evidence: `${callCount} call-like and ${storageWrites} storage-write indicator(s)`,
-    });
-  }
-  if (isProxy) {
-    findings.push({
-      id: "proxy-pattern",
-      severity: "Medium",
-      title: "Proxy-like pattern",
-      description: "The submitted bytes contain delegatecall and calldata indicators commonly associated with proxy dispatch. Confirm the implementation address and upgrade controls.",
-      evidence: "Delegatecall plus calldata indicator",
-    });
-  }
-
-  const fullRisk = Math.min(100, findings.reduce((sum, finding) => sum + ({ Low: 8, Medium: 20, High: 40, Critical: 70 }[finding.severity]), 0));
-  const riskScore = mode === "signatures" ? 0 : fullRisk;
-  const visibleFindings = mode === "signatures" ? [] : findings;
-  const bytecodeLength = bytecode.length / 2;
+  const functions = list(signatures.functions, "signatures.functions").map((entry, index) => {
+    const fn = record(entry, `signatures.functions[${index}]`);
+    const knownName = fn.known_name === null ? null : string(fn.known_name, `signatures.functions[${index}].known_name`);
+    return { selector: string(fn.selector, `signatures.functions[${index}].selector`), signature: knownName, confidence: knownName ? "Known signature" : "Unlabelled selector", isView: boolean(fn.is_view, `signatures.functions[${index}].is_view`) };
+  });
+  const findings = list(security.findings, "security.findings").map((entry, index) => {
+    const finding = record(entry, `security.findings[${index}]`);
+    const offset = finding.offset === null ? "" : ` at 0x${number(finding.offset, `security.findings[${index}].offset`).toString(16)}`;
+    return { id: `${string(finding.pattern, `security.findings[${index}].pattern`)}-${index}`, severity: string(finding.severity, `security.findings[${index}].severity`), title: string(finding.title, `security.findings[${index}].title`), description: string(finding.description, `security.findings[${index}].description`), evidence: `${string(finding.pattern, `security.findings[${index}].pattern`)}${offset}` };
+  });
+  const normalizedBytecode = normalizeBytecode(bytecode);
+  const engineTier = string(metadata.analysis_profile, "metadata.analysis_profile") as QualityTier;
+  if (engineTier !== qualityTier) throw new EngineReportValidationError("Embedded engine returned a report for a different quality tier.");
 
   return {
-    id: `analysis-${Date.now()}`,
-    createdAt: new Date().toISOString(),
-    mode,
-    qualityTier,
-    bytecode,
-    bytecodePreview: `${bytecode.slice(0, 18)}…${bytecode.slice(-12)}`,
-    bytecodeLength,
-    instructionCount: Math.max(1, Math.floor(bytecodeLength / 1.7)),
-    blockCount: Math.max(1, Math.ceil(bytecodeLength / 28)),
-    riskLevel: calculateRiskLevel(riskScore),
-    riskScore,
-    functions,
-    findings: visibleFindings,
-    pseudoSolidity: buildPseudoSolidity(functions, hasDelegateCall, hasSelfDestruct),
-    isProxy,
-    callCount,
-    storageWrites,
+    id: `analysis-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: new Date().toISOString(), mode, qualityTier,
+    bytecode: normalizedBytecode,
+    bytecodePreview: normalizedBytecode.length > 30 ? `${normalizedBytecode.slice(0, 18)}…${normalizedBytecode.slice(-12)}` : normalizedBytecode,
+    bytecodeLength: number(metadata.bytecode_len, "metadata.bytecode_len"),
+    instructionCount: number(disassembly.instruction_count, "disassembly.instruction_count"),
+    blockCount: number(cfg.block_count, "cfg_summary.block_count"),
+    riskLevel: riskLevel(number(security.risk_score, "security.risk_score")),
+    riskScore: number(security.risk_score, "security.risk_score"),
+    functions, findings,
+    pseudoSolidity: string(decompiled.pseudo_source, "decompiled.pseudo_source"),
+    isProxy: boolean(metadata.is_proxy, "metadata.is_proxy"),
+    callCount: number(security.call_count, "security.call_count"),
+    storageWrites: number(security.sstore_count, "security.sstore_count"),
+    schemaVersion, elapsedMs: number(report.elapsed_ms, "elapsed_ms"),
+    limitations: string(capabilities.limitation, "capabilities.limitation"),
+    privateFunctionCandidateCount: list(report.private_functions, "private_functions").length,
   };
 }
 
-export function formatByteCount(count: number) {
-  return count >= 1024 ? `${(count / 1024).toFixed(1)} KB` : `${count} bytes`;
+export function isPersistedEmbeddedReport(value: unknown): value is AnalysisReport {
+  try {
+    const report = record(value, "persisted report");
+    return string(report.schemaVersion, "schemaVersion") === ENGINE_REPORT_SCHEMA
+      && typeof report.id === "string"
+      && typeof report.createdAt === "string"
+      && typeof report.bytecode === "string"
+      && typeof report.pseudoSolidity === "string"
+      && Array.isArray(report.findings)
+      && Array.isArray(report.functions);
+  } catch { return false; }
 }
 
-export function formatReportTime(isoDate: string) {
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(isoDate));
-}
-
+export function formatByteCount(count: number) { return count >= 1024 ? `${(count / 1024).toFixed(1)} KB` : `${count} bytes`; }
+export function formatReportTime(isoDate: string) { return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(isoDate)); }
 export function riskAppearance(level: RiskLevel) {
-  const appearance = {
-    low: { label: "Low risk", color: "#47D7AC", surface: "#10362D" },
-    elevated: { label: "Elevated", color: "#F4B942", surface: "#3D2E10" },
-    high: { label: "High risk", color: "#F98254", surface: "#3A2119" },
-    critical: { label: "Critical", color: "#F35D5D", surface: "#3D191D" },
-  } as const;
-  return appearance[level];
+  return { low: { label: "Low risk", color: "#47D7AC", surface: "#10362D" }, elevated: { label: "Elevated", color: "#F4B942", surface: "#3D2E10" }, high: { label: "High risk", color: "#F98254", surface: "#3A2119" }, critical: { label: "Critical", color: "#F35D5D", surface: "#3D191D" } }[level];
 }

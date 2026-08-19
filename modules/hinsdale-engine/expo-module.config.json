@@ -1,0 +1,5 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": { "modules": ["HinsdaleEngineModule"] },
+  "android": { "modules": ["expo.modules.hinsdaleengine.HinsdaleEngineModule"] }
+}

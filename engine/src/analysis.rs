@@ -2,18 +2,13 @@ use serde::{Deserialize, Serialize};
 
 pub const JSON_SCHEMA_VERSION: &str = "hinsdale.report/v2";
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum QualityTier {
+    #[default]
     Fast,
     Precise,
     Research,
-}
-
-impl Default for QualityTier {
-    fn default() -> Self {
-        Self::Fast
-    }
 }
 
 impl QualityTier {
@@ -25,7 +20,7 @@ impl QualityTier {
         }
     }
 
-    pub fn from_str(value: &str) -> Option<Self> {
+    pub fn parse(value: &str) -> Option<Self> {
         match value.trim().to_ascii_lowercase().as_str() {
             "fast" => Some(Self::Fast),
             "precise" => Some(Self::Precise),

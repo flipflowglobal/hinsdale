@@ -156,7 +156,7 @@ impl Val {
                 (Val::Const(x), fb) if x == 0xffffffffffffffff => {
                     Val::And(Box::new(Val::Const(x)), Box::new(fb))
                 }
-                (fa, Val::Const(y)) if y == 0 => Val::Const(0),
+                (_, Val::Const(0)) => Val::Const(0),
                 (fa, fb) => Val::And(Box::new(fa), Box::new(fb)),
             },
             Val::Or(a, b) => match (a.fold(), b.fold()) {
@@ -354,7 +354,7 @@ impl Val {
             Val::CreateAddr => "new Contract(...)".into(),
             Val::Create2Addr { salt } => format!("new Contract{{salt: {}}}(...)", salt.render()),
 
-            Val::Param { index, ty } => format!("{}", param_name(*index, ty)),
+            Val::Param { index, ty } => param_name(*index, ty).to_string(),
 
             Val::Local(name) => name.clone(),
             Val::Phi(vals) => {
@@ -419,6 +419,12 @@ fn param_name(index: usize, ty: &EvmType) -> String {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SymStack {
     items: Vec<Val>,
+}
+
+impl Default for SymStack {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SymStack {
@@ -622,7 +628,6 @@ pub struct SymExec<'a> {
     visit_counts: FxHashMap<usize, usize>,
     incoming_stacks: FxHashMap<usize, SymStack>,
     results: FxHashMap<usize, BlockResult>,
-    var_ctr: usize,
     call_ctr: usize,
     stats: SymbolicStats,
 }
@@ -645,16 +650,9 @@ impl<'a> SymExec<'a> {
             visit_counts: FxHashMap::default(),
             incoming_stacks: FxHashMap::default(),
             results: FxHashMap::default(),
-            var_ctr: 0,
             call_ctr: 0,
             stats: SymbolicStats::default(),
         }
-    }
-
-    fn fresh_var(&mut self) -> String {
-        let n = self.var_ctr;
-        self.var_ctr += 1;
-        format!("_v{n}")
     }
 
     fn fresh_call(&mut self) -> String {
@@ -672,8 +670,6 @@ impl<'a> SymExec<'a> {
 
         // Track memory writes for require/revert string recovery
         let mut mem: FxHashMap<u64, Val> = FxHashMap::default();
-        let mut revert_strings: FxHashMap<usize, String> = FxHashMap::default();
-
         for &idx in &block.instructions {
             let ins = &instrs[idx];
             let op = ins.opcode;
@@ -1074,7 +1070,7 @@ impl<'a> SymExec<'a> {
 
                 // ── CALL FAMILY ──────────────────────────────────────────
                 0xf1 => {
-                    let gas = stack.pop();
+                    let _gas = stack.pop();
                     let to = stack.pop();
                     let value = stack.pop();
                     let ofs = stack.pop();
@@ -1103,7 +1099,7 @@ impl<'a> SymExec<'a> {
                     stack.push(Val::Unknown("callcode_result".into()));
                 }
                 0xf4 => {
-                    let gas = stack.pop();
+                    let _gas = stack.pop();
                     let to = stack.pop();
                     let ofs = stack.pop();
                     let len = stack.pop();
@@ -1123,7 +1119,7 @@ impl<'a> SymExec<'a> {
                     stack.push(Val::Local(var));
                 }
                 0xfa => {
-                    let gas = stack.pop();
+                    let _gas = stack.pop();
                     let to = stack.pop();
                     let ofs = stack.pop();
                     let len = stack.pop();

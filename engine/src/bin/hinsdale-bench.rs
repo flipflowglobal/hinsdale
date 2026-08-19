@@ -50,7 +50,7 @@ struct BenchmarkReport {
 fn parse_tier(args: &[String]) -> QualityTier {
     args.windows(2)
         .find(|pair| pair[0] == "--tier")
-        .and_then(|pair| QualityTier::from_str(&pair[1]))
+        .and_then(|pair| QualityTier::parse(&pair[1]))
         .unwrap_or(QualityTier::Precise)
 }
 

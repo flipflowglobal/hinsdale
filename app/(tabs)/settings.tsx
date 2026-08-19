@@ -9,8 +9,8 @@ import { useHinsdale } from "@/lib/hinsdale-store";
 
 const MODES: { key: AnalysisMode; title: string; detail: string }[] = [
   { key: "full", title: "Full report", detail: "Selectors, indicators, and source view" },
-  { key: "security", title: "Security focus", detail: "Prioritize local opcode warnings" },
-  { key: "signatures", title: "Signatures only", detail: "Recover known function selectors" },
+  { key: "security", title: "Security focus", detail: "Prioritize embedded-engine security findings" },
+  { key: "signatures", title: "Signatures only", detail: "Render recovered engine selectors" },
 ];
 
 const TIERS: { key: QualityTier; icon: ComponentProps<typeof MaterialIcons>["name"] }[] = [
@@ -42,7 +42,7 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>REQUESTED ENGINE PROFILE</Text>
+        <Text style={styles.sectionLabel}>EMBEDDED ENGINE PROFILE</Text>
         <View style={styles.group}>
           {TIERS.map((tier, index) => {
             const detail = QUALITY_TIER_DETAILS[tier.key];
@@ -55,8 +55,8 @@ export default function SettingsScreen() {
           })}
         </View>
 
-        <Text style={styles.sectionLabel}>ENGINE ROADMAP</Text>
-        <Pressable onPress={() => router.push("/roadmap")} style={({ pressed }) => [styles.roadmapRow, pressed && styles.pressed]}><View style={styles.roadmapIcon}><MaterialIcons name="account-tree" size={19} color="#2DD4E9" /></View><View style={styles.modeText}><Text style={styles.modeTitle}>Capability roadmap</Text><Text style={styles.modeDetail}>CFG, function recovery, lifting quality, evaluation, and distribution readiness</Text></View><MaterialIcons name="chevron-right" size={22} color="#718087" /></Pressable>
+        <Text style={styles.sectionLabel}>ENGINE INTEGRITY</Text>
+        <Pressable onPress={() => router.push("/roadmap")} style={({ pressed }) => [styles.roadmapRow, pressed && styles.pressed]}><View style={styles.roadmapIcon}><MaterialIcons name="verified" size={19} color="#2DD4E9" /></View><View style={styles.modeText}><Text style={styles.modeTitle}>Native runtime status</Text><Text style={styles.modeDetail}>Verify the bundled engine, schema contract, input limit, and required release environment</Text></View><MaterialIcons name="chevron-right" size={22} color="#718087" /></Pressable>
 
         <Text style={styles.sectionLabel}>LOCAL STORAGE</Text>
         <View style={styles.group}>
@@ -64,7 +64,7 @@ export default function SettingsScreen() {
           <Pressable disabled={!reports.length} onPress={confirmClear} style={({ pressed }) => [styles.clearRow, styles.divider, !reports.length && styles.disabled, pressed && styles.pressed]}><View style={styles.clearIcon}><MaterialIcons name="delete-outline" size={19} color="#F35D5D" /></View><View style={styles.modeText}><Text style={styles.clearTitle}>Clear saved reports</Text><Text style={styles.modeDetail}>{reports.length ? `${reports.length} report${reports.length === 1 ? "" : "s"} saved locally` : "No saved reports"}</Text></View><MaterialIcons name="chevron-right" size={22} color="#718087" /></Pressable>
         </View>
 
-        <View style={styles.footer}><MaterialIcons name="memory" size={17} color="#718087" /><Text style={styles.footerText}>Hinsdale Mobile stores reports locally and does not upload submitted bytecode.</Text></View>
+        <View style={styles.footer}><MaterialIcons name="memory" size={17} color="#718087" /><Text style={styles.footerText}>Hinsdale stores validated embedded-engine reports locally and does not upload submitted bytecode.</Text></View>
       </ScrollView>
     </ScreenContainer>
   );

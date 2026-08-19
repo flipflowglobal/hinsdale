@@ -227,11 +227,7 @@ pub fn analyze_security(disasm: &Disassembly) -> SecurityReport {
             // ── TIMESTAMP ────────────────────────────────────────────────
             0x42 => {
                 // Timestamp used in comparison
-                let next_is_cmp = i + 1 < n
-                    && matches!(
-                        instrs[i + 1].opcode,
-                        0x10 | 0x11 | 0x12 | 0x13 | 0x14 | 0x15
-                    );
+                let next_is_cmp = i + 1 < n && matches!(instrs[i + 1].opcode, 0x10..=0x15);
                 if next_is_cmp {
                     findings.push(finding(
                         Severity::Low,
