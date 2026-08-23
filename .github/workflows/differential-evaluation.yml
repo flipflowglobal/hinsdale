@@ -1,0 +1,34 @@
+name: Offline Differential Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest_path:
+        description: "Repository-relative path to a committed hinsdale.differential-manifest/v1 file"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      manifest_path:
+        required: true
+        type: string
+
+jobs:
+  evaluate-saved-artifacts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Verify manifest path
+        env:
+          MANIFEST_PATH: ${{ inputs.manifest_path }}
+        run: test -n "$MANIFEST_PATH" && test -f "$MANIFEST_PATH"
+      - name: Evaluate verified saved artifacts
+        env:
+          MANIFEST_PATH: ${{ inputs.manifest_path }}
+        run: node engine/tools/evaluate-differential-artifacts.mjs --manifest "$MANIFEST_PATH" --out differential-report.json
+      - uses: actions/upload-artifact@v4
+        with: { name: hinsdale-differential-report, path: differential-report.json }

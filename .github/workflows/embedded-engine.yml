@@ -35,3 +35,19 @@ jobs:
         run: test -d modules/hinsdale-engine/ios/HinsdaleEngine.xcframework
       - uses: actions/upload-artifact@v4
         with: { name: hinsdale-ios-framework, path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework }
+
+  release-readiness:
+    needs: [android-artifacts, ios-artifacts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: pnpm/action-setup@v4
+        with: { version: "9.12.0" }
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with: { name: hinsdale-android-libraries, path: modules/hinsdale-engine/android/src/main/jniLibs }
+      - uses: actions/download-artifact@v4
+        with: { name: hinsdale-ios-framework, path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework }
+      - run: pnpm engine:verify

@@ -25,6 +25,7 @@ rayon       = "1.8"          # parallel analysis — critical for long bytecode
 indexmap    = "2"            # ordered maps for stable output
 smallvec    = "1"            # stack-local vecs for opcode args
 rustc-hash  = "1"            # fast non-crypto hashing
+sha2        = "0.10"         # SHA-256 provenance for bytecode and report artifacts
 
 # Python FFI
 pyo3        = { version = "0.21", features = ["extension-module"], optional = true }

@@ -27,6 +27,7 @@ fn embedded_bridge_returns_the_versioned_engine_report() {
     assert_eq!(report["report"]["schema_version"], "hinsdale.report/v2");
     assert_eq!(report["report"]["metadata"]["analysis_profile"], "precise");
     assert_eq!(report["report"]["metadata"]["bytecode_len"], 45);
+    assert_eq!(report["report"]["metadata"]["bytecode_sha256"].as_str().map(str::len), Some(64));
 }
 
 #[test]

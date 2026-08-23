@@ -41,6 +41,7 @@ function Overview({ report }: { report: AnalysisReport }) {
         <Metric label="Instructions" value={report.instructionCount} />
         <Metric label="Blocks" value={report.blockCount} />
         <Metric label="Selectors" value={report.functions.length} />
+        <Metric label="Bytecode hash" value={report.bytecodeSha256.slice(0, 10)} />
       </View>
 
       <View style={styles.card}>

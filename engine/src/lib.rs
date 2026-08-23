@@ -14,6 +14,7 @@ pub mod types;
 
 use analysis::{AnalysisOptions, CapabilityStatus, JSON_SCHEMA_VERSION};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::time::Instant;
 
 /// Full decompilation result from a single `analyze()` call.
@@ -35,6 +36,7 @@ pub struct HinsdaleReport {
 pub struct Metadata {
     pub analysis_profile: String,
     pub bytecode_len: usize,
+    pub bytecode_sha256: String,
     pub is_runtime: bool, // heuristic: starts with PUSH1 0x60 PUSH1 0x40
     pub solc_version_hint: Option<String>,
     pub is_proxy: bool,
@@ -127,6 +129,7 @@ pub fn analyze_with_options(bytecode: &[u8], options: AnalysisOptions) -> Hinsda
     let metadata = Metadata {
         analysis_profile: options.quality_tier.as_str().into(),
         bytecode_len: bytecode.len(),
+        bytecode_sha256: hex::encode(Sha256::digest(bytecode)),
         is_runtime,
         solc_version_hint,
         is_proxy,

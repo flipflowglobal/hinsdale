@@ -20,6 +20,7 @@ export type AnalysisReport = {
   mode: AnalysisMode;
   qualityTier: QualityTier;
   bytecode: string;
+  bytecodeSha256: string;
   bytecodePreview: string;
   bytecodeLength: number;
   instructionCount: number;
@@ -120,6 +121,7 @@ export function reportFromEmbeddedEngine(raw: unknown, bytecode: string, mode: A
     id: `analysis-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: new Date().toISOString(), mode, qualityTier,
     bytecode: normalizedBytecode,
+    bytecodeSha256: string(metadata.bytecode_sha256, "metadata.bytecode_sha256"),
     bytecodePreview: normalizedBytecode.length > 30 ? `${normalizedBytecode.slice(0, 18)}…${normalizedBytecode.slice(-12)}` : normalizedBytecode,
     bytecodeLength: number(metadata.bytecode_len, "metadata.bytecode_len"),
     instructionCount: number(disassembly.instruction_count, "disassembly.instruction_count"),
@@ -144,6 +146,7 @@ export function isPersistedEmbeddedReport(value: unknown): value is AnalysisRepo
       && typeof report.id === "string"
       && typeof report.createdAt === "string"
       && typeof report.bytecode === "string"
+      && typeof report.bytecodeSha256 === "string"
       && typeof report.pseudoSolidity === "string"
       && Array.isArray(report.findings)
       && Array.isArray(report.functions);

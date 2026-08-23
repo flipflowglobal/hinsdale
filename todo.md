@@ -24,8 +24,17 @@
 - [x] Superseded remote service contract with embedded Rust ABI validation, versioned response schema checks, and typed native failure handling
 - [x] Replace static benchmark display with verifiable engine-run metadata and explicit unavailable states
 - [x] Harden Rust CLI, JSON schema, error handling, test coverage, release packaging, and operational documentation
-- [ ] Build and verify the Android and iOS native binary artifacts on supported release runners before distribution
+- [x] Configure Android and iOS native artifact verification on supported release runners before distribution
 - [x] Define the embedded Rust engine ABI, platform support matrix, resource limits, and application-facing error contract
 - [x] Add native Android and iOS bindings that package the Rust engine with the mobile application
 - [x] Replace all local heuristic/demo analysis paths with embedded Rust engine execution
 - [x] Add native bridge integration tests and release packaging checks for Android and iOS artifacts
+- [x] Retired the previously drafted remote-engine API policy in favor of the embedded-only execution contract
+- [x] Superseded remote-engine client configuration in favor of validated JNI and Swift embedded-engine bindings
+- [x] Implement Etherscan verified-contract corpus ingestion with immutable provenance metadata and integrity checks
+- [x] Implement saved Heimdall-rs and Gigahorse artifact normalization, differential metrics, and regression thresholds
+- [x] Add CI workflows for provenance validation and differential evaluation without executing untrusted external binaries
+- [x] Validate embedded-engine schema, offline corpus tooling syntax, differential evaluator syntax, and mobile integration with documented operational limits
+- [x] Remove the remote-engine integration path and assert embedded-only analysis across mobile, server, and release documentation
+- [ ] Run the configured Android-NDK and macOS/Xcode release workflows to build and verify bundled native engine artifacts
+- [ ] Inspect the user-authorized Alchemy account through its CLI and retain only non-secret configuration required for corpus or evaluation workflows
