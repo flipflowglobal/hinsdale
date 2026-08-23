@@ -55,5 +55,5 @@
 - [ ] Recover complete ABI-backed events and custom errors with raw evidence
 - [ ] Publish schema compatibility and deprecation policy for external report consumers
 - [x] Commit and push the latest validated embedded-only Hinsdale revision to the connected repository
-- [ ] Verify the newly authenticated repository remote and publish the pending Hinsdale commit
-- [ ] Publish the latest validated Hinsdale revision to github.com/flipflowglobal/hinsdale
+- [x] Verify GitHub repository access and publish the pending Hinsdale revision on a protected update branch
+- [x] Publish the latest validated Hinsdale revision to github.com/flipflowglobal/hinsdale
