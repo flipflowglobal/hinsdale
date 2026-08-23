@@ -381,7 +381,7 @@ pub fn lookup(byte: u8) -> Opcode {
         0xfd => op!(0xfd, "REVERT", 2, 0, 0, System, "revert mem[ofs..ofs+len]"),
         0xfe => op!(0xfe, "INVALID", 0, 0, 0, Invalid, "designated invalid"),
         0xff => op!(0xff, "SELFDESTRUCT", 1, 0, 0, System, "selfdestruct(addr)"),
-        // ── EOF (EIP-3540) placeholders ────────────────────────────────────
+        // ── EOF (EIP-3540) control-flow opcodes; container validation is not implemented ──
         0xe0 => op!(0xe0, "RJUMP", 0, 0, 2, Flow, "relative jump EOF"),
         0xe1 => op!(0xe1, "RJUMPI", 1, 0, 2, Flow, "relative cond jump EOF"),
         0xe2 => op!(0xe2, "RJUMPV", 1, 0, 1, Flow, "relative jump table EOF"),

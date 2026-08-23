@@ -1,0 +1,28 @@
+# Remaining Hinsdale Distribution Work
+
+## Current Baseline
+
+Hinsdale has an embedded Rust analysis engine, versioned report schema, native Android and iOS bridge source, bounded execution profiles, offline differential-artifact evaluator, and CI definitions. The following work is still required before representing the system as a distributable mobile product or a mature decompiler. This list excludes the removed RPC, Alchemy CLI, and external source-ingestion path.
+
+| Priority | Remaining addition | Why it is still required | Completion evidence |
+|---|---|---|---|
+| Release-blocking | Build Android `arm64-v8a` and `armeabi-v7a` Rust shared libraries on an Android NDK runner | Native bridge source alone cannot execute in a signed Android build. | Artifact workflow produces both libraries and `pnpm engine:verify` passes against the downloaded artifacts. |
+| Release-blocking | Build the iOS `HinsdaleEngine.xcframework` on a macOS/Xcode runner | The Swift bridge requires a linked, device-and-simulator compatible XCFramework. | Artifact workflow produces the framework and release verification passes. |
+| Release-blocking | Test signed custom-development and release builds on physical Android and iOS devices | Expo Go and web intentionally cannot load the native engine. The JavaScript suite cannot prove JNI or Swift/C ABI behavior on a device. | A real bytecode report is produced, schema-validated, retained in history, and reopened on each platform. |
+| Release-blocking | Establish signing, versioning, and artifact retention ownership | A distributable mobile release needs accountable signing credentials and release provenance. | Release checklist identifies owners, build numbers, signing policy, artifact retention, and rollback procedure. |
+| High | Add a curated, committed benchmark corpus with rights and provenance reviewed by maintainers | The evaluator is ready but there is no production benchmark data bundled with the repository. | Manifest-backed cases run deterministically in CI with bytecode hashes and documented provenance. |
+| High | Add reviewed saved Heimdall-rs and Gigahorse artifacts | Differential code does not create external-tool results and therefore cannot measure real agreement until trusted artifacts are supplied. | Artifact-only workflow reports comparison metrics and fails on declared regression thresholds. |
+| High | Add fuzz and adversarial regression inputs | Existing engine tests verify contracts and the native ABI, not broad malformed or adversarial bytecode behavior. | Corpus includes generated and minimized failure cases; engine remains bounded and returns typed failures. |
+| High | Complete EOF container parsing and validation | The opcode table recognizes relative-jump opcodes, but full EIP-3540 container sections, headers, validation, and inter-section analysis are not implemented. | EOF fixtures parse with validated section boundaries and control-flow evidence. |
+| Medium | Improve interprocedural control-flow and private-function recovery | Current recovery is confidence-aware but does not fully model all compiler-specific internal-call conventions or dynamic jump targets. | Evaluation corpus demonstrates measured recovery quality across multiple compiler families. |
+| Medium | Improve path-sensitive ABI, memory, storage, and structurization recovery | The current model provides bounded merged state and evidence; it is not alias-complete or generally structurized for all reducible and irreducible regions. | New metrics demonstrate improvements without regressions in existing evaluation cases. |
+| Medium | Recover complete events and custom errors | Current output preserves event topics and printable error evidence rather than reconstructing every ABI declaration. | Reports include validated event and custom-error signatures with raw evidence links. |
+| Medium | Define public release and schema-compatibility policy | The JSON schema is versioned, but published compatibility guarantees, upgrade policy, and deprecation process are not yet established. | A release policy documents supported schema versions and migration expectations. |
+
+## Not Required for Hinsdale
+
+The following items are deliberately out of scope for the embedded product: a mobile remote-engine fallback, stored Alchemy credentials, the Alchemy CLI, external RPC configuration, automatic external source acquisition, and executing third-party decompiler binaries in CI. Developers may use separate approved tools to prepare benchmark data, but those tools are not Hinsdale runtime features.
+
+## Recommended Release Order
+
+First produce and verify the native Android and iOS artifacts, then run device-level reports on signed builds. Next add reviewable benchmark and differential artifacts, followed by fuzzing and EOF support. The deeper control-flow, memory, and ABI improvements should then proceed as measured engine-quality work rather than as UI claims.

@@ -31,14 +31,26 @@
 - [x] Add native bridge integration tests and release packaging checks for Android and iOS artifacts
 - [x] Retired the previously drafted remote-engine API policy in favor of the embedded-only execution contract
 - [x] Superseded remote-engine client configuration in favor of validated JNI and Swift embedded-engine bindings
-- [x] Implement Etherscan verified-contract corpus ingestion with immutable provenance metadata and integrity checks
+- [x] Retired Etherscan corpus-ingestion work because external RPC and source-acquisition paths are not required by Hinsdale
 - [x] Implement saved Heimdall-rs and Gigahorse artifact normalization, differential metrics, and regression thresholds
 - [x] Add CI workflows for provenance validation and differential evaluation without executing untrusted external binaries
 - [x] Validate embedded-engine schema, offline corpus tooling syntax, differential evaluator syntax, and mobile integration with documented operational limits
 - [x] Remove the remote-engine integration path and assert embedded-only analysis across mobile, server, and release documentation
 - [ ] Run the configured Android-NDK and macOS/Xcode release workflows to build and verify bundled native engine artifacts
-- [ ] Inspect the user-authorized Alchemy account through its CLI and retain only non-secret configuration required for corpus or evaluation workflows
-- [ ] Resume the latest checkpoint and complete outstanding embedded-engine release prerequisites
-- [ ] Configure a developer-only HTTPS RPC endpoint for verified runtime-bytecode acquisition during offline corpus ingestion
+- [x] Retired Alchemy account inspection because the CLI is not a Hinsdale feature or release prerequisite
+- [x] Resume the latest checkpoint and complete the external-path cleanup and release-prerequisite audit
+- [x] Removed external RPC configuration because corpus acquisition is outside the required Hinsdale scope
 - [x] Remove Alchemy CLI language from Hinsdale product documentation and retain it only in an external developer-setup note
-- [ ] Retrieve the user’s existing Alchemy RPC URL through the authenticated CLI without adding Alchemy as a Hinsdale feature
+- [x] Retired external Alchemy CLI retrieval because it is not needed for the embedded Hinsdale system
+- [x] Removed external Alchemy CLI configuration from the project scope
+- [x] Remove all external RPC acquisition, Alchemy CLI, and Etherscan corpus-ingestion code paths from Hinsdale
+- [x] Produce an evidence-based inventory of only the remaining additions required for a distributable Hinsdale release
+- [ ] Build and verify native Android and iOS engine artifacts on their supported release runners
+- [ ] Run signed-device JNI and Swift bridge integration tests using real bytecode reports
+- [ ] Establish release signing, versioning, artifact retention, and rollback ownership
+- [ ] Add a curated maintainers-reviewed benchmark corpus and saved peer-tool differential artifacts
+- [ ] Add bounded fuzzing and adversarial regression coverage for malformed and difficult bytecode
+- [ ] Implement complete EOF container parsing and validation
+- [ ] Improve interprocedural CFG, private functions, path-sensitive ABI, memory, storage, and structurization recovery
+- [ ] Recover complete ABI-backed events and custom errors with raw evidence
+- [ ] Publish schema compatibility and deprecation policy for external report consumers

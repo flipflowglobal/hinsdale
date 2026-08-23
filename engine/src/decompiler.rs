@@ -542,7 +542,7 @@ fn emit_solidity(
         s.push('\n');
     }
 
-    // Event stubs
+    // Event topic evidence
     if !sigs.event_topics.is_empty() {
         s.push_str("    // ── Events (topic hashes from LOG patterns) ──────────────\n");
         for event in &sigs.events {
