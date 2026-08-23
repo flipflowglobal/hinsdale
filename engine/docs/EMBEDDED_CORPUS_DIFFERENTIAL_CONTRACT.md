@@ -23,7 +23,7 @@ Etherscan’s V2 `getsourcecode` endpoint retrieves source and compilation metad
 | `retrieved_at`, `source_url`, `request_fingerprint` | Ingestion runtime. |
 | `raw_response_sha256`, `source_sha256`, `abi_sha256` | Canonical UTF-8 bytes from the received response. |
 | `compiler_version`, `optimization`, `proxy`, `implementation`, `license` | Etherscan verified-source response. |
-| `runtime_bytecode_sha256` | Independently supplied bytecode artifact, never inferred from source. |
+| `runtime_bytecode_sha256` | Runtime bytecode acquired through the developer-only Alchemy `eth_getCode` RPC call, then SHA-256 hashed locally. |
 
 ## Differential Evaluation Contract
 
