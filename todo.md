@@ -54,3 +54,4 @@
 - [ ] Improve interprocedural CFG, private functions, path-sensitive ABI, memory, storage, and structurization recovery
 - [ ] Recover complete ABI-backed events and custom errors with raw evidence
 - [ ] Publish schema compatibility and deprecation policy for external report consumers
+- [x] Commit and push the latest validated embedded-only Hinsdale revision to the connected repository
