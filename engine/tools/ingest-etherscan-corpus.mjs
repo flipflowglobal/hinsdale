@@ -9,7 +9,7 @@ const outputPath = args.get("--out");
 
 if (!manifestPath || !outputPath) throw new Error("Usage: node ingest-etherscan-corpus.mjs --manifest <addresses.json> --out <directory>");
 if (!process.env.ETHERSCAN_API_KEY) throw new Error("ETHERSCAN_API_KEY is required only for the offline corpus ingestion job.");
-if (!process.env.ALCHEMY_RPC_URL || !process.env.ALCHEMY_RPC_URL.startsWith("https://")) throw new Error("ALCHEMY_RPC_URL must be an HTTPS endpoint for offline corpus bytecode acquisition.");
+if (!process.env.HINSDALE_CORPUS_RPC_URL || !process.env.HINSDALE_CORPUS_RPC_URL.startsWith("https://")) throw new Error("HINSDALE_CORPUS_RPC_URL must be an HTTPS JSON-RPC endpoint for offline corpus bytecode acquisition.");
 
 const requestManifest = JSON.parse(await readFile(resolve(manifestPath), "utf8"));
 if (requestManifest.schema_version !== "hinsdale.etherscan-request/v1" || !Array.isArray(requestManifest.contracts)) throw new Error("Invalid corpus request manifest.");
@@ -18,14 +18,14 @@ await mkdir(outputRoot, { recursive: true });
 const records = [];
 
 async function getRuntimeBytecode(address) {
-  const response = await fetch(process.env.ALCHEMY_RPC_URL, {
+  const response = await fetch(process.env.HINSDALE_CORPUS_RPC_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getCode", params: [address, "latest"] }),
   });
-  if (!response.ok) throw new Error(`Alchemy RPC rejected ${address} with HTTP ${response.status}.`);
+  if (!response.ok) throw new Error(`Runtime-code RPC rejected ${address} with HTTP ${response.status}.`);
   const payload = await response.json();
-  if (payload.error || typeof payload.result !== "string" || !/^0x[0-9a-fA-F]+$/.test(payload.result) || payload.result === "0x") throw new Error(`Alchemy RPC did not return deployed runtime bytecode for ${address}.`);
+  if (payload.error || typeof payload.result !== "string" || !/^0x[0-9a-fA-F]+$/.test(payload.result) || payload.result === "0x") throw new Error(`Runtime-code RPC did not return deployed runtime bytecode for ${address}.`);
   return payload.result.toLowerCase();
 }
 

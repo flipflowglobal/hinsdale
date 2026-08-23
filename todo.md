@@ -39,4 +39,6 @@
 - [ ] Run the configured Android-NDK and macOS/Xcode release workflows to build and verify bundled native engine artifacts
 - [ ] Inspect the user-authorized Alchemy account through its CLI and retain only non-secret configuration required for corpus or evaluation workflows
 - [ ] Resume the latest checkpoint and complete outstanding embedded-engine release prerequisites
-- [ ] Configure a developer-only Alchemy HTTPS RPC endpoint for verified runtime-bytecode acquisition during offline corpus ingestion
+- [ ] Configure a developer-only HTTPS RPC endpoint for verified runtime-bytecode acquisition during offline corpus ingestion
+- [x] Remove Alchemy CLI language from Hinsdale product documentation and retain it only in an external developer-setup note
+- [ ] Retrieve the user’s existing Alchemy RPC URL through the authenticated CLI without adding Alchemy as a Hinsdale feature
