@@ -1,12 +1,44 @@
 name: Embedded Engine Packaging
-
 on:
+  workflow_dispatch:
   push:
-    paths: ["engine/**", "modules/hinsdale-engine/**", "scripts/verify-embedded-engine.mjs"]
+    paths:
+      [
+        "engine/**",
+        "modules/hinsdale-engine/**",
+        "scripts/verify-embedded-engine.mjs",
+        "package.json",
+        "pnpm-lock.yaml",
+      ]
   pull_request:
-    paths: ["engine/**", "modules/hinsdale-engine/**", "scripts/verify-embedded-engine.mjs"]
-
+    paths:
+      [
+        "engine/**",
+        "modules/hinsdale-engine/**",
+        "scripts/verify-embedded-engine.mjs",
+        "package.json",
+        "pnpm-lock.yaml",
+      ]
+permissions:
+  contents: read
+concurrency:
+  group: embedded-engine-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
+  source-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: pnpm/action-setup@v4
+        with: { version: "9.12.0" }
+      - uses: dtolnay/rust-toolchain@stable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check && pnpm lint && pnpm test
+      - working-directory: engine
+        run: cargo test && cargo clippy --all-targets -- -D warnings && cargo fmt --check
+
   android-artifacts:
     runs-on: ubuntu-latest
     steps:
@@ -14,16 +46,23 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
+      - uses: android-actions/setup-android@v3
       - name: Install Android NDK
-        run: yes | sdkmanager --install "ndk;27.1.12297006"
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "ndk;27.1.12297006"
       - name: Build Rust Android libraries
-        env: { ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.1.12297006 }
+        env:
+          ANDROID_NDK_HOME: "${{ env.ANDROID_HOME }}/ndk/27.1.12297006"
         run: bash modules/hinsdale-engine/scripts/build-android.sh
       - name: Verify Android outputs
         run: test -s modules/hinsdale-engine/android/src/main/jniLibs/arm64-v8a/libhinsdale_engine.so && test -s modules/hinsdale-engine/android/src/main/jniLibs/armeabi-v7a/libhinsdale_engine.so
       - uses: actions/upload-artifact@v4
-        with: { name: hinsdale-android-libraries, path: modules/hinsdale-engine/android/src/main/jniLibs }
-
+        with:
+          {
+            name: hinsdale-android-libraries,
+            path: modules/hinsdale-engine/android/src/main/jniLibs,
+          }
   ios-artifacts:
     runs-on: macos-latest
     steps:
@@ -34,10 +73,13 @@ jobs:
       - name: Verify iOS output
         run: test -d modules/hinsdale-engine/ios/HinsdaleEngine.xcframework
       - uses: actions/upload-artifact@v4
-        with: { name: hinsdale-ios-framework, path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework }
-
+        with:
+          {
+            name: hinsdale-ios-framework,
+            path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework,
+          }
   release-readiness:
-    needs: [android-artifacts, ios-artifacts]
+    needs: [source-contracts, android-artifacts, ios-artifacts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +89,15 @@ jobs:
         with: { version: "9.12.0" }
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
-        with: { name: hinsdale-android-libraries, path: modules/hinsdale-engine/android/src/main/jniLibs }
+        with:
+          {
+            name: hinsdale-android-libraries,
+            path: modules/hinsdale-engine/android/src/main/jniLibs,
+          }
       - uses: actions/download-artifact@v4
-        with: { name: hinsdale-ios-framework, path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework }
+        with:
+          {
+            name: hinsdale-ios-framework,
+            path: modules/hinsdale-engine/ios/HinsdaleEngine.xcframework,
+          }
       - run: pnpm engine:verify
