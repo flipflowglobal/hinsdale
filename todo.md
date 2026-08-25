@@ -57,3 +57,4 @@
 - [x] Commit and push the latest validated embedded-only Hinsdale revision to the connected repository
 - [x] Verify GitHub repository access and publish the pending Hinsdale revision on a protected update branch
 - [x] Publish the latest validated Hinsdale revision to github.com/flipflowglobal/hinsdale
+- [x] Verify the dedicated GitHub branch and push any pending Hinsdale publication changes
