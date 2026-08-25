@@ -58,3 +58,4 @@
 - [x] Verify GitHub repository access and publish the pending Hinsdale revision on a protected update branch
 - [x] Publish the latest validated Hinsdale revision to github.com/flipflowglobal/hinsdale
 - [x] Verify the dedicated GitHub branch and push any pending Hinsdale publication changes
+- [x] Authenticate the GitHub CLI and verify publish access to the Hinsdale repository
