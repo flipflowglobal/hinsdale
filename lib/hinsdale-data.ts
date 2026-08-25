@@ -13,6 +13,12 @@ export const QUALITY_TIER_DETAILS: Record<QualityTier, { label: string; status: 
 
 export type SecurityFinding = { id: string; severity: string; title: string; description: string; evidence: string };
 export type RecoveredFunction = { selector: string; signature: string | null; confidence: string; isView: boolean };
+export type AbiParameter = { name: string; type: string; indexed: boolean };
+export type EventEvidence = { logOffset: number; logOpcode: string; topicCount: number; topic0PushOffset: number | null; dataBytesHint: number | null; instructionOffsets: number[] };
+export type ErrorEvidence = { revertOffset: number; selectorPushOffset: number | null; revertDataBytesHint: number | null; argumentWordCount: number | null; instructionOffsets: number[] };
+export type RecoveredAbiEvent = { topic0: string | null; name: string; signature: string | null; parameters: AbiParameter[]; confidence: number; evidence: EventEvidence[] };
+export type RecoveredCustomError = { selector: string; name: string; signature: string | null; parameters: AbiParameter[]; confidence: number; evidence: ErrorEvidence[] };
+export type SchemaPolicy = { policyVersion: string; compatibilityMode: string; breakingChangeRule: string; migrationRequired: boolean };
 
 export type AnalysisReport = {
   id: string;
@@ -37,6 +43,9 @@ export type AnalysisReport = {
   elapsedMs: number;
   limitations: string;
   privateFunctionCandidateCount: number;
+  abiEvents: RecoveredAbiEvent[];
+  customErrors: RecoveredCustomError[];
+  schemaPolicy: SchemaPolicy;
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -84,11 +93,86 @@ function list(value: unknown, name: string): unknown[] {
   return value;
 }
 
+function nullableString(value: unknown, name: string): string | null { return value === null ? null : string(value, name); }
+function nullableNumber(value: unknown, name: string): number | null { return value === null ? null : number(value, name); }
+function optionalList(value: unknown, name: string): unknown[] { return value === undefined ? [] : list(value, name); }
+
 function riskLevel(score: number): RiskLevel {
   if (score >= 75) return "critical";
   if (score >= 50) return "high";
   if (score >= 25) return "elevated";
   return "low";
+}
+
+function abiParameters(value: unknown, name: string): AbiParameter[] {
+  return list(value, name).map((entry, index) => {
+    const parameter = record(entry, `${name}[${index}]`);
+    return { name: string(parameter.name, `${name}[${index}].name`), type: string(parameter.ty, `${name}[${index}].ty`), indexed: boolean(parameter.indexed, `${name}[${index}].indexed`) };
+  });
+}
+
+function integerList(value: unknown, name: string): number[] {
+  return list(value, name).map((entry, index) => number(entry, `${name}[${index}]`));
+}
+
+function readSchemaPolicy(value: unknown): SchemaPolicy {
+  if (value === undefined) return { policyVersion: "legacy-v2", compatibilityMode: "unspecified", breakingChangeRule: "unknown", migrationRequired: false };
+  const policy = record(value, "schema_policy");
+  return {
+    policyVersion: string(policy.policy_version, "schema_policy.policy_version"),
+    compatibilityMode: string(policy.compatibility_mode, "schema_policy.compatibility_mode"),
+    breakingChangeRule: string(policy.breaking_change_rule, "schema_policy.breaking_change_rule"),
+    migrationRequired: boolean(policy.migration_required, "schema_policy.migration_required"),
+  };
+}
+
+function readAbiEvents(value: unknown): RecoveredAbiEvent[] {
+  return optionalList(value, "signatures.abi_events").map((entry, index) => {
+    const event = record(entry, `signatures.abi_events[${index}]`);
+    const evidence = list(event.evidence, `signatures.abi_events[${index}].evidence`).map((item, evidenceIndex) => {
+      const raw = record(item, `signatures.abi_events[${index}].evidence[${evidenceIndex}]`);
+      return {
+        logOffset: number(raw.log_offset, `signatures.abi_events[${index}].evidence[${evidenceIndex}].log_offset`),
+        logOpcode: string(raw.log_opcode, `signatures.abi_events[${index}].evidence[${evidenceIndex}].log_opcode`),
+        topicCount: number(raw.topic_count, `signatures.abi_events[${index}].evidence[${evidenceIndex}].topic_count`),
+        topic0PushOffset: nullableNumber(raw.topic0_push_offset, `signatures.abi_events[${index}].evidence[${evidenceIndex}].topic0_push_offset`),
+        dataBytesHint: nullableNumber(raw.data_bytes_hint, `signatures.abi_events[${index}].evidence[${evidenceIndex}].data_bytes_hint`),
+        instructionOffsets: integerList(raw.instruction_offsets, `signatures.abi_events[${index}].evidence[${evidenceIndex}].instruction_offsets`),
+      };
+    });
+    return {
+      topic0: nullableString(event.topic0, `signatures.abi_events[${index}].topic0`),
+      name: string(event.name, `signatures.abi_events[${index}].name`),
+      signature: nullableString(event.known_signature, `signatures.abi_events[${index}].known_signature`),
+      parameters: abiParameters(event.parameters, `signatures.abi_events[${index}].parameters`),
+      confidence: number(event.confidence, `signatures.abi_events[${index}].confidence`),
+      evidence,
+    };
+  });
+}
+
+function readCustomErrors(value: unknown): RecoveredCustomError[] {
+  return optionalList(value, "signatures.custom_errors").map((entry, index) => {
+    const error = record(entry, `signatures.custom_errors[${index}]`);
+    const evidence = list(error.evidence, `signatures.custom_errors[${index}].evidence`).map((item, evidenceIndex) => {
+      const raw = record(item, `signatures.custom_errors[${index}].evidence[${evidenceIndex}]`);
+      return {
+        revertOffset: number(raw.revert_offset, `signatures.custom_errors[${index}].evidence[${evidenceIndex}].revert_offset`),
+        selectorPushOffset: nullableNumber(raw.selector_push_offset, `signatures.custom_errors[${index}].evidence[${evidenceIndex}].selector_push_offset`),
+        revertDataBytesHint: nullableNumber(raw.revert_data_bytes_hint, `signatures.custom_errors[${index}].evidence[${evidenceIndex}].revert_data_bytes_hint`),
+        argumentWordCount: nullableNumber(raw.argument_word_count, `signatures.custom_errors[${index}].evidence[${evidenceIndex}].argument_word_count`),
+        instructionOffsets: integerList(raw.instruction_offsets, `signatures.custom_errors[${index}].evidence[${evidenceIndex}].instruction_offsets`),
+      };
+    });
+    return {
+      selector: string(error.selector, `signatures.custom_errors[${index}].selector`),
+      name: string(error.name, `signatures.custom_errors[${index}].name`),
+      signature: nullableString(error.known_signature, `signatures.custom_errors[${index}].known_signature`),
+      parameters: abiParameters(error.parameters, `signatures.custom_errors[${index}].parameters`),
+      confidence: number(error.confidence, `signatures.custom_errors[${index}].confidence`),
+      evidence,
+    };
+  });
 }
 
 export function reportFromEmbeddedEngine(raw: unknown, bytecode: string, mode: AnalysisMode, qualityTier: QualityTier): AnalysisReport {
@@ -102,7 +186,6 @@ export function reportFromEmbeddedEngine(raw: unknown, bytecode: string, mode: A
   const security = record(report.security, "security");
   const decompiled = record(report.decompiled, "decompiled");
   const capabilities = record(report.capabilities, "capabilities");
-
   const functions = list(signatures.functions, "signatures.functions").map((entry, index) => {
     const fn = record(entry, `signatures.functions[${index}]`);
     const knownName = fn.known_name === null ? null : string(fn.known_name, `signatures.functions[${index}].known_name`);
@@ -116,7 +199,6 @@ export function reportFromEmbeddedEngine(raw: unknown, bytecode: string, mode: A
   const normalizedBytecode = normalizeBytecode(bytecode);
   const engineTier = string(metadata.analysis_profile, "metadata.analysis_profile") as QualityTier;
   if (engineTier !== qualityTier) throw new EngineReportValidationError("Embedded engine returned a report for a different quality tier.");
-
   return {
     id: `analysis-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: new Date().toISOString(), mode, qualityTier,
@@ -136,6 +218,9 @@ export function reportFromEmbeddedEngine(raw: unknown, bytecode: string, mode: A
     schemaVersion, elapsedMs: number(report.elapsed_ms, "elapsed_ms"),
     limitations: string(capabilities.limitation, "capabilities.limitation"),
     privateFunctionCandidateCount: list(report.private_functions, "private_functions").length,
+    abiEvents: readAbiEvents(signatures.abi_events),
+    customErrors: readCustomErrors(signatures.custom_errors),
+    schemaPolicy: readSchemaPolicy(report.schema_policy),
   };
 }
 
@@ -149,7 +234,10 @@ export function isPersistedEmbeddedReport(value: unknown): value is AnalysisRepo
       && typeof report.bytecodeSha256 === "string"
       && typeof report.pseudoSolidity === "string"
       && Array.isArray(report.findings)
-      && Array.isArray(report.functions);
+      && Array.isArray(report.functions)
+      && Array.isArray(report.abiEvents)
+      && Array.isArray(report.customErrors)
+      && typeof record(report.schemaPolicy, "schemaPolicy").policyVersion === "string";
   } catch { return false; }
 }
 

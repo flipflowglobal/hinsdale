@@ -21,6 +21,7 @@ use std::time::Instant;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HinsdaleReport {
     pub schema_version: String,
+    pub schema_policy: SchemaPolicyMetadata,
     pub capabilities: CapabilityStatus,
     pub metadata: Metadata,
     pub disassembly: disasm::Disassembly,
@@ -30,6 +31,26 @@ pub struct HinsdaleReport {
     pub private_functions: Vec<private_functions::PrivateFunctionCandidate>,
     pub decompiled: decompiler::DecompiledOutput,
     pub elapsed_ms: f64,
+}
+
+/// Machine-readable policy for consumers of the versioned report contract.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SchemaPolicyMetadata {
+    pub policy_version: String,
+    pub compatibility_mode: String,
+    pub breaking_change_rule: String,
+    pub migration_required: bool,
+}
+
+impl SchemaPolicyMetadata {
+    fn current() -> Self {
+        Self {
+            policy_version: "1.0".into(),
+            compatibility_mode: "additive-optional".into(),
+            breaking_change_rule: "new-schema-major".into(),
+            migration_required: false,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -139,6 +160,7 @@ pub fn analyze_with_options(bytecode: &[u8], options: AnalysisOptions) -> Hinsda
 
     HinsdaleReport {
         schema_version: JSON_SCHEMA_VERSION.into(),
+        schema_policy: SchemaPolicyMetadata::current(),
         capabilities: CapabilityStatus::for_tier(options.quality_tier),
         metadata,
         disassembly,

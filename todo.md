@@ -52,8 +52,8 @@
 - [ ] Add bounded fuzzing and adversarial regression coverage for malformed and difficult bytecode
 - [ ] Implement complete EOF container parsing and validation
 - [ ] Improve interprocedural CFG, private functions, path-sensitive ABI, memory, storage, and structurization recovery
-- [ ] Recover complete ABI-backed events and custom errors with raw evidence
-- [ ] Publish schema compatibility and deprecation policy for external report consumers
+- [x] Recover complete ABI-backed events and custom errors with raw evidence
+- [x] Publish schema compatibility and deprecation policy for external report consumers
 - [x] Commit and push the latest validated embedded-only Hinsdale revision to the connected repository
 - [x] Verify GitHub repository access and publish the pending Hinsdale revision on a protected update branch
 - [x] Publish the latest validated Hinsdale revision to github.com/flipflowglobal/hinsdale
@@ -63,3 +63,7 @@
 - [x] Implement and validate distribution-readiness debugging and polish fixes
 - [x] Publish a reconciled remaining-work register with release blockers, owners, and verification criteria
 - [x] Remove tracked Rust build output from version control and prevent generated artifacts from re-entering the repository
+- [ ] Restore GitHub Actions runner eligibility after the repository account-billing lock is resolved
+- [x] Implement evidence-backed ABI event and custom-error recovery in embedded engine reports
+- [x] Define and publish report-schema compatibility, migration, and deprecation policy
+- [x] Integrate ABI recovery evidence into mobile reports and validate end-to-end contracts

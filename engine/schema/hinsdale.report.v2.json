@@ -6,10 +6,27 @@
   "required": ["schema_version", "capabilities", "metadata", "cfg_summary", "signatures", "security", "decompiled", "private_functions", "elapsed_ms"],
   "properties": {
     "schema_version": { "const": "hinsdale.report/v2" },
+    "schema_policy": {
+      "type": "object",
+      "required": ["policy_version", "compatibility_mode", "breaking_change_rule", "migration_required"],
+      "properties": {
+        "policy_version": { "type": "string" },
+        "compatibility_mode": { "const": "additive-optional" },
+        "breaking_change_rule": { "const": "new-schema-major" },
+        "migration_required": { "type": "boolean" }
+      }
+    },
     "metadata": { "type": "object", "required": ["analysis_profile", "bytecode_len"] },
     "cfg_summary": { "type": "object", "required": ["block_count", "edge_count", "resolved_jump_count", "unresolved_jump_count"] },
     "private_functions": { "type": "array" },
     "capabilities": { "type": "object", "required": ["quality_tier", "limitation"] },
-    "decompiled": { "type": "object", "required": ["functions", "mapping_candidates", "symbolic_stats"] }
+    "decompiled": { "type": "object", "required": ["functions", "mapping_candidates", "symbolic_stats"] },
+    "signatures": {
+      "type": "object",
+      "properties": {
+        "abi_events": { "type": "array" },
+        "custom_errors": { "type": "array" }
+      }
+    }
   }
 }

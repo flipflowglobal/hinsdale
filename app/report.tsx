@@ -7,12 +7,12 @@ import { ScreenContainer } from "@/components/screen-container";
 import { QUALITY_TIER_DETAILS, formatByteCount, formatReportTime, riskAppearance, type AnalysisReport } from "@/lib/hinsdale-data";
 import { useHinsdale } from "@/lib/hinsdale-store";
 
-type ReportSection = "Overview" | "Security" | "Functions" | "Source";
+type ReportSection = "Overview" | "Security" | "Functions" | "ABI" | "Source";
 
 function SectionTabs({ active, onChange }: { active: ReportSection; onChange: (section: ReportSection) => void }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
-      {(["Overview", "Security", "Functions", "Source"] as ReportSection[]).map((section) => (
+      {(["Overview", "Security", "Functions", "ABI", "Source"] as ReportSection[]).map((section) => (
         <Pressable key={section} onPress={() => onChange(section)} style={({ pressed }) => [styles.tab, active === section && styles.tabActive, pressed && styles.pressed]}>
           <Text style={[styles.tabText, active === section && styles.tabTextActive]}>{section}</Text>
         </Pressable>
@@ -41,6 +41,8 @@ function Overview({ report }: { report: AnalysisReport }) {
         <Metric label="Instructions" value={report.instructionCount} />
         <Metric label="Blocks" value={report.blockCount} />
         <Metric label="Selectors" value={report.functions.length} />
+        <Metric label="ABI events" value={report.abiEvents.length} />
+        <Metric label="Custom errors" value={report.customErrors.length} />
         <Metric label="Bytecode hash" value={report.bytecodeSha256.slice(0, 10)} />
       </View>
 
@@ -73,6 +75,11 @@ function Overview({ report }: { report: AnalysisReport }) {
           <View style={[styles.profileStatus, qualityTier === "fast" && styles.profileStatusAvailable]}><Text style={[styles.profileStatusText, qualityTier === "fast" && styles.profileStatusTextAvailable]}>{profile.status}</Text></View>
         </View>
         <Text style={styles.profileDescription}>{report.limitations}</Text>
+      </View>
+      <View style={styles.schemaCard}>
+        <Text style={styles.profileEyebrow}>REPORT COMPATIBILITY</Text>
+        <Text style={styles.schemaTitle}>{report.schemaVersion} · policy {report.schemaPolicy.policyVersion}</Text>
+        <Text style={styles.schemaBody}>{report.schemaPolicy.compatibilityMode} · breaking changes require {report.schemaPolicy.breakingChangeRule}</Text>
       </View>
     </View>
   );
@@ -124,6 +131,42 @@ function Functions({ report }: { report: AnalysisReport }) {
           </View>
         </View>
       ))}
+    </View>
+  );
+}
+
+function AbiEvidence({ report }: { report: AnalysisReport }) {
+  if (!report.abiEvents.length && !report.customErrors.length) {
+    return <EmptySection icon="fingerprint" title="No ABI event or error evidence" body="The embedded engine did not observe a recoverable LOG topic or selector-backed REVERT pattern for this bytecode and profile." />;
+  }
+  return (
+    <View style={styles.sectionStack}>
+      <View style={styles.noteCard}>
+        <MaterialIcons name="fact-check" size={19} color="#2DD4E9" />
+        <Text style={styles.noteText}>Labels and parameter types appear only for recognized ABI hashes. Unknown hashes retain their selector or topic and instruction evidence without an invented declaration.</Text>
+      </View>
+      {report.abiEvents.map((event) => {
+        const evidence = event.evidence[0];
+        const declaration = event.signature ?? `${event.name} (${event.topic0 ?? "anonymous LOG"})`;
+        const parameters = event.parameters.map((parameter) => `${parameter.type}${parameter.indexed ? " indexed" : ""} ${parameter.name}`).join(", ");
+        return <View key={`${event.topic0 ?? event.name}-${evidence?.logOffset ?? 0}`} style={styles.card}>
+          <View style={styles.cardHeader}><Text style={styles.cardTitle}>EVENT · {event.confidence.toFixed(2)} confidence</Text><MaterialIcons name="notifications-active" size={19} color="#47D7AC" /></View>
+          <Text style={styles.abiTitle}>{declaration}</Text>
+          {!!parameters && <Text style={styles.abiParameters}>{parameters}</Text>}
+          <View style={styles.evidence}><Text style={styles.evidenceText}>{evidence ? `${evidence.logOpcode} at 0x${evidence.logOffset.toString(16)} · ${evidence.topicCount} topic(s)${evidence.dataBytesHint === null ? "" : ` · ${evidence.dataBytesHint} data bytes`}` : "No instruction evidence retained"}</Text></View>
+        </View>;
+      })}
+      {report.customErrors.map((error) => {
+        const evidence = error.evidence[0];
+        const declaration = error.signature ?? `${error.name} (${error.selector})`;
+        const parameters = error.parameters.map((parameter) => `${parameter.type} ${parameter.name}`).join(", ");
+        return <View key={`${error.selector}-${evidence?.revertOffset ?? 0}`} style={styles.card}>
+          <View style={styles.cardHeader}><Text style={styles.cardTitle}>CUSTOM ERROR · {error.confidence.toFixed(2)} confidence</Text><MaterialIcons name="error-outline" size={19} color="#F4B942" /></View>
+          <Text style={styles.abiTitle}>{declaration}</Text>
+          {!!parameters && <Text style={styles.abiParameters}>{parameters}</Text>}
+          <View style={styles.evidence}><Text style={styles.evidenceText}>{evidence ? `REVERT at 0x${evidence.revertOffset.toString(16)} · ${evidence.revertDataBytesHint ?? "unknown"} data bytes · ${evidence.argumentWordCount ?? "unknown"} argument word(s)` : "No instruction evidence retained"}</Text></View>
+        </View>;
+      })}
     </View>
   );
 }
@@ -193,6 +236,7 @@ export default function ReportScreen() {
         {section === "Overview" && <Overview report={report} />}
         {section === "Security" && <Security report={report} />}
         {section === "Functions" && <Functions report={report} />}
+        {section === "ABI" && <AbiEvidence report={report} />}
         {section === "Source" && <Source report={report} />}
       </ScrollView>
     </ScreenContainer>
@@ -240,6 +284,9 @@ const styles = StyleSheet.create({
   profileStatusText: { color: "#C7D1D5", fontSize: 10, fontWeight: "800" },
   profileStatusTextAvailable: { color: "#47D7AC" },
   profileDescription: { color: "#9DAAB0", fontSize: 12, lineHeight: 17, marginTop: 11 },
+  schemaCard: { backgroundColor: "#151C20", borderColor: "#2B353B", borderRadius: 14, borderWidth: 1, padding: 14 },
+  schemaTitle: { color: "#F4F7F8", fontSize: 13, fontWeight: "800", marginTop: 5 },
+  schemaBody: { color: "#9DAAB0", fontSize: 11, lineHeight: 16, marginTop: 5 },
   severityPill: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
   severityText: { fontSize: 11, fontWeight: "800" },
   findingTitle: { color: "#F4F7F8", fontSize: 16, fontWeight: "800", marginTop: 12 },
@@ -253,6 +300,8 @@ const styles = StyleSheet.create({
   functionSelector: { color: "#9DAAB0", fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }), fontSize: 11, marginTop: 3 },
   functionPill: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
   functionPillText: { fontSize: 10, fontWeight: "800" },
+  abiTitle: { color: "#F4F7F8", fontSize: 14, fontWeight: "800", marginTop: 12 },
+  abiParameters: { color: "#C7D1D5", fontFamily: Platform.select({ ios: "Menlo", default: "monospace" }), fontSize: 11, lineHeight: 17, marginTop: 7 },
   emptySection: { alignItems: "center", backgroundColor: "#1C2226", borderColor: "#2B353B", borderRadius: 18, borderWidth: 1, marginTop: 8, paddingHorizontal: 26, paddingVertical: 32 },
   emptyIcon: { alignItems: "center", backgroundColor: "#15313A", borderRadius: 14, height: 48, justifyContent: "center", width: 48 },
   emptyTitle: { color: "#F4F7F8", fontSize: 17, fontWeight: "800", marginTop: 14, textAlign: "center" },

@@ -33,6 +33,44 @@ fn embedded_bridge_returns_the_versioned_engine_report() {
             .map(str::len),
         Some(64)
     );
+    assert_eq!(report["report"]["schema_policy"]["policy_version"], "1.0");
+    assert_eq!(
+        report["report"]["schema_policy"]["compatibility_mode"],
+        "additive-optional"
+    );
+}
+
+#[test]
+fn embedded_bridge_recovers_abi_events_and_custom_errors_with_evidence() {
+    let report = call_bridge(
+        concat!(
+            "7fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+            "60006000a1",
+            "6308c379a060005260046000fd"
+        ),
+        "research",
+    );
+
+    assert_eq!(report["ok"], true);
+    let events = report["report"]["signatures"]["abi_events"]
+        .as_array()
+        .expect("ABI event array");
+    assert_eq!(events.len(), 1);
+    assert_eq!(
+        events[0]["known_signature"],
+        "Transfer(address,address,uint256)"
+    );
+    assert_eq!(events[0]["parameters"].as_array().map(Vec::len), Some(3));
+    assert_eq!(events[0]["evidence"][0]["log_opcode"], "LOG1");
+    assert!(events[0]["evidence"][0]["log_offset"].is_number());
+
+    let errors = report["report"]["signatures"]["custom_errors"]
+        .as_array()
+        .expect("custom error array");
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0]["known_signature"], "Error(string)");
+    assert_eq!(errors[0]["evidence"][0]["revert_data_bytes_hint"], 4);
+    assert_eq!(errors[0]["evidence"][0]["argument_word_count"], 0);
 }
 
 #[test]

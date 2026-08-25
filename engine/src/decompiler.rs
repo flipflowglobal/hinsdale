@@ -542,14 +542,45 @@ fn emit_solidity(
         s.push('\n');
     }
 
-    // Event topic evidence
-    if !sigs.event_topics.is_empty() {
-        s.push_str("    // ── Events (topic hashes from LOG patterns) ──────────────\n");
-        for event in &sigs.events {
-            let label = event.known_name.as_deref().unwrap_or("UnknownEvent(...)");
+    // ABI event and custom-error evidence. Unknown values remain comments so
+    // pseudo-source never invents a Solidity declaration from a raw hash.
+    if !sigs.abi_events.is_empty() {
+        s.push_str("    // ── Events (ABI evidence from LOG instructions) ───────────\n");
+        for event in &sigs.abi_events {
+            let label = event
+                .known_signature
+                .as_deref()
+                .unwrap_or("unknown event topic");
+            let offsets = event
+                .evidence
+                .iter()
+                .map(|evidence| format!("0x{:x}", evidence.log_offset))
+                .collect::<Vec<_>>()
+                .join(", ");
             s.push_str(&format!(
-                "    // event {label}; // topic: {} | confidence {:.2}\n",
-                event.topic, event.confidence
+                "    // event {label}; topic: {} | LOG offsets: {offsets} | confidence {:.2}\n",
+                event.topic0.as_deref().unwrap_or("<anonymous>"),
+                event.confidence
+            ));
+        }
+        s.push('\n');
+    }
+    if !sigs.custom_errors.is_empty() {
+        s.push_str("    // ── Errors (ABI evidence from REVERT instructions) ────────\n");
+        for error in &sigs.custom_errors {
+            let label = error
+                .known_signature
+                .as_deref()
+                .unwrap_or(error.name.as_str());
+            let offsets = error
+                .evidence
+                .iter()
+                .map(|evidence| format!("0x{:x}", evidence.revert_offset))
+                .collect::<Vec<_>>()
+                .join(", ");
+            s.push_str(&format!(
+                "    // error {label}; selector: {} | REVERT offsets: {offsets} | confidence {:.2}\n",
+                error.selector, error.confidence
             ));
         }
         s.push('\n');
