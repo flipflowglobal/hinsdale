@@ -63,3 +63,4 @@
 - [x] Implement and validate distribution-readiness debugging and polish fixes
 - [x] Publish a reconciled remaining-work register with release blockers, owners, and verification criteria
 - [x] Remove tracked Rust build output from version control and prevent generated artifacts from re-entering the repository
+- [ ] Restore GitHub Actions runner eligibility after the repository account-billing lock is resolved
