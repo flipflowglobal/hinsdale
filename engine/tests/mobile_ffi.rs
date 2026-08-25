@@ -74,6 +74,34 @@ fn embedded_bridge_recovers_abi_events_and_custom_errors_with_evidence() {
 }
 
 #[test]
+fn embedded_bridge_keeps_unknown_abi_hashes_unlabelled_with_evidence() {
+    let report = call_bridge(
+        concat!(
+            "7faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "60006000a1",
+            "63deadbeef60005260046000fd"
+        ),
+        "research",
+    );
+
+    let events = report["report"]["signatures"]["abi_events"]
+        .as_array()
+        .expect("ABI event array");
+    assert_eq!(events[0]["known_signature"], serde_json::Value::Null);
+    assert_eq!(events[0]["name"], "UnknownEvent");
+    assert_eq!(events[0]["parameters"].as_array().map(Vec::len), Some(0));
+    assert!(events[0]["evidence"][0]["topic0_push_offset"].is_number());
+
+    let errors = report["report"]["signatures"]["custom_errors"]
+        .as_array()
+        .expect("custom error array");
+    assert_eq!(errors[0]["known_signature"], serde_json::Value::Null);
+    assert_eq!(errors[0]["name"], "CustomError_deadbeef");
+    assert_eq!(errors[0]["parameters"].as_array().map(Vec::len), Some(0));
+    assert!(errors[0]["evidence"][0]["selector_push_offset"].is_number());
+}
+
+#[test]
 fn embedded_bridge_returns_a_typed_error_for_invalid_input() {
     let result = call_bridge("not-hex", "fast");
     assert_eq!(result["ok"], false);

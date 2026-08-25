@@ -67,3 +67,4 @@
 - [x] Implement evidence-backed ABI event and custom-error recovery in embedded engine reports
 - [x] Define and publish report-schema compatibility, migration, and deprecation policy
 - [x] Integrate ABI recovery evidence into mobile reports and validate end-to-end contracts
+- [x] Add regression coverage that unknown ABI event topics and custom-error selectors remain unlabelled with raw evidence
