@@ -61,6 +61,9 @@ Thumbs.db
 *.tar.gz
 .cache/
 
+# Rust compiler output is reproducible and must not be versioned.
+/engine/target/
+
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 .project-config.json

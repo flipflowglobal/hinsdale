@@ -62,3 +62,4 @@
 - [x] Audit release configuration, native bridges, CI workflows, and runtime behavior for distribution readiness
 - [x] Implement and validate distribution-readiness debugging and polish fixes
 - [x] Publish a reconciled remaining-work register with release blockers, owners, and verification criteria
+- [x] Remove tracked Rust build output from version control and prevent generated artifacts from re-entering the repository
