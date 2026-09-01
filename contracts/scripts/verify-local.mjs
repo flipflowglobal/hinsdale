@@ -15,15 +15,21 @@ import { Account, Address, hexToBytes, bytesToHex } from "@ethereumjs/util";
 import { Interface } from "ethers";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compile, artifact, initCodeFor, predictAddress, DEFAULT_SALT, OUT } from "./lib.mjs";
+import {
+  compile, artifact, initCodeFor, predictAddress, requireAddress,
+  DEFAULT_SALT, CREATE2_DEPLOYER, OUT,
+} from "./lib.mjs";
 
 const ONE_ETHER = 10n ** 18n;
 const GAS = 30_000_000n;
 
-const OWNER = "0x00000000000000000000000000000000000000A1";
+// Override with RECEIVER_OWNER to rehearse the exact contract you will deploy.
+const OWNER = requireAddress(process.env.RECEIVER_OWNER ?? "0x00000000000000000000000000000000000000A1", "RECEIVER_OWNER");
 const STRANGER = "0x00000000000000000000000000000000000000B2";
 const PAYEE = "0x00000000000000000000000000000000000000C3";
-const DEPLOYER = "0x00000000000000000000000000000000000000D4";
+// Deploy from the real deterministic proxy, so the address asserted below is
+// the exact address this contract will occupy on a live chain.
+const DEPLOYER = CREATE2_DEPLOYER;
 
 const addr = (hex) => new Address(hexToBytes(hex));
 
@@ -85,6 +91,7 @@ const create = await evm.runCall({
 const receiver = create.createdAddress?.toString();
 
 check("CREATE2 deploys", receiver !== undefined, `gas ${create.execResult.executionGasUsed}`);
+console.log(`        deployed from ${CREATE2_DEPLOYER} — the live-chain address`);
 check("address matches prediction", receiver?.toLowerCase() === predicted.toLowerCase(), predicted);
 check(
   "runtime bytecode matches artifact",
