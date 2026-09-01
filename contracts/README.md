@@ -77,13 +77,19 @@ authority over the contract afterwards — ownership comes from
 ## Verifying before you deploy
 
 ```bash
-node scripts/verify-local.mjs
+node scripts/verify-local.mjs                              # default test owner
+RECEIVER_OWNER=0xYourOwnerAddress node scripts/verify-local.mjs
 ```
 
 Deploys into an in-process Cancun EVM and asserts, among 26 checks, that the
 CREATE2 address matches `predict.mjs`, that `receive()` stays inside the 2300
 gas stipend, that withdrawals are owner-gated, and that the two-step ownership
 handover revokes the previous owner.
+
+The rehearsal deploys from the real deterministic proxy rather than a test EOA,
+so the address it asserts is the address the contract will occupy on a live
+chain. Set `RECEIVER_OWNER` to your intended owner and the run becomes a dress
+rehearsal of the exact deployment: same init code, same address, same owner.
 
 ## Auditing with Hinsdale itself
 
